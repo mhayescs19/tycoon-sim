@@ -1,0 +1,42 @@
+### Gary Tan Tycoon Simulator
+
+#### 1. Purpose
+
+Gary Tan Simulator is a 3D tycoon game built in Unity where the player starts as a young engineer named Gary in a run-down San Francisco apartment. The core loop is typing-driven to generate Lines of Code: Gary writes code, earns money from his output, activates side hustles to compound income, and can disappear down the hall into a mysterious apartment to gamble at his own risk.
+
+#### 2. Design Principles
+
+- **Lines of Code are the heartbeat.** Every dollar earned and every unlock triggered traces back to LOC output. Nothing earns passively until Gary has typed his way to it.
+- **The apartment tells the story.** The 3D environment is the only narrative device — no cutscenes needed.
+- **Hustles multiply, never replace.** Side income streams amplify LOC earnings. A player who ignores them entirely still has a complete game loop.
+- **Gambling is optional.** The Slots Room is physically separated. Players choose to enter. Whatever happens in there doesn't touch the main loop.
+
+#### 3. Core Concepts
+
+### Lines of Code (LOC)
+
+The base unit of player output and the only primary currency. The player types any key on their keyboard to generate LOC. Typing speed directly determines LOC/sec. LOC converts to Dollars at a fixed rate. LOC count and current LOC/sec are always visible on the HUD.
+
+### Apartment
+
+The single 3D environment where all primary gameplay takes place. It begins as a dim, cluttered one-room SF walk-up. As Gary earns Dollars, the apartment visually upgrades — better furniture, more monitors, cleaner walls. Physical objects appear in the apartment as Hustles are purchased. A door leads to the hallway and the Slots Room down the hall.
+
+### Hustle
+
+A corkboard on the apartment wall displays all available Hustles — the only place Gary spends Dollars. Each Hustle has a one-time cost, generates passive income once purchased, and spawns a physical object in the apartment.
+
+- Freelance Bug Bounty — always available. Lowest cost. Generates a flat passive Dollar/sec. Spawns a sticky note on the wall.
+- Airbed — sublets floor space. Generates passive Dollar/sec per unit. Supports up to 3 units at increasing cost and diminishing return per unit. Spawns a blow-up mattress and pillow on the floor per unit purchased.
+- OpenClaw via Hostinger — highest cost. Runs an AI coding assistant that generates passive Dollar/sec and passive LOC/sec. The only Hustle that boosts LOC output. Spawns a glowing terminal window on a new monitor on the desk.
+
+### Slots Room
+
+Apartment 168 — a lucky casino number — down the hall from Gary's unit. Gary can play slots where wins and losses immediately update the game's main Dollar balance.
+
+#### 4. User-Facing Behavior
+
+- **Session start.** Player lands inside the apartment. Gary's computer is on the desk. LOC count and LOC/sec are visible as ambient HUD elements. A single line sets the scene: "San Francisco. $47 in the bank. One idea."
+- **Core typing loop.** Player types any key to generate LOC in real time. Typing speed determines LOC/sec. LOC convert to Dollars at a fixed visible rate on the HUD. Dollars are spent at the Hustle board to activate Hustles.
+- **Hustle board.** Player approaches the corkboard to open the panel. All three Hustles are displayed with name, cost, and effect. Purchasing deducts. Dollars immediately and spawns the Hustle's object in the apartment. The panel closes when the player steps away.
+- **Slots Room.** Player walks to the hallway and enters Apartment 168. Player sets a wager from their current Dollar balance and pulls the lever. The slots spin and resolve immediately — win, lose, or jackpot — and the balance updates. Player can pull again or leave.
+
