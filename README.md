@@ -14,7 +14,7 @@
 
 ## Project Spec
 
-[Project Spec](docs/project-spec.md)
+[Project Spec](docs/specs/project-spec.md)
 
 ## Current Working Tickets
 
