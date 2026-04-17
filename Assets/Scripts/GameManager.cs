@@ -26,13 +26,18 @@ public class GameManager : MonoBehaviour
         Instance = this;
     }
 
+    void Update()
+    {
+        if (LOCPerSec <= 0f) return;
+        dollarBalance += LOCPerSec * locToDollarRate * Time.deltaTime;
+        OnBalanceChanged?.Invoke(dollarBalance);
+    }
+
     public void AddLOC(int amount)
     {
         if (amount <= 0) return;
         LOCCount += amount;
-        dollarBalance += amount * locToDollarRate;
         OnLOCChanged?.Invoke(LOCCount, LOCPerSec);
-        OnBalanceChanged?.Invoke(dollarBalance);
     }
 
     public void SetLOCPerSec(float value)
