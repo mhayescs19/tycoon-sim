@@ -34,7 +34,7 @@
 - **Scrolling code feed styled like an IDE:** Dark background panel, monospace font, lines scroll upward as new ones appear. No syntax highlighting this pass — plain white text on dark bg.
 - **Combo multiplier (1×–3×):** Typing cadence over a 1-second rolling window drives the multiplier. Fast sustained typing → 3×. Slowing past threshold → decays back toward 1× over 1.5s. `LOCPerSec = baseLocPerSec * multiplier` is pushed to `GameManager` every frame.
 - **GStack source as corpus:** Bundled as a plaintext `.txt` asset. Cycles continuously — when `charIndex` reaches end, wraps to 0. No network fetch needed.
-- **Proximity auto-focus:** A `SphereCollider` (trigger, radius ~2m) on the desk detects the camera pivot GameObject entering/exiting. On enter: UI panel activates, `TypingInput.isActive = true`. On exit: panel deactivates, `LOCPerSec` resets to 0.
+- **Proximity auto-focus:** A `SphereCollider` (trigger, radius ~2m) on the desk detects the `Player` GameObject (tagged `CameraPivot`) entering/exiting. Uses `OnTriggerStay` as fallback for missed enters. On activation: UI panel shows, `TypingInput.isActive = true`. On exit: panel hides, `LOCPerSec` resets to 0.
 - **Per-keypress corpus advance:** Each keypress moves `charIndex` forward by `charsPerKeypress` (3). The newly revealed characters are appended to the display buffer. When a newline is hit, it creates a new line in the scroll view.
 
 ## Context
