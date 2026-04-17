@@ -3,44 +3,47 @@
 ## Scope
 
 **Included:**
-- Computer desk placeholder object in the apartment with a proximity trigger
-- `TypingInput.cs` — captures any keypress while player is in range, advances code display, updates combo multiplier
-- `ComputerDisplay.cs` — IDE-style scrolling code feed UI panel (screen-space overlay), renders GStack source code character by character
-- `ComboMultiplier.cs` — tracks typing cadence, maintains a streak multiplier (1×–3×) that scales LOC/sec; decays when player slows or stops
-- GStack source code bundled as `Assets/Resources/GStackSourceCode.txt` — used as the code feed corpus
-- `GameManager.SetLOCPerSec()` called live as multiplier changes
-- Proximity auto-focus: entering trigger activates display + keyboard capture; leaving deactivates both
+- Computer desk placeholder (DeskBody + Monitor cubes) with proximity trigger
+- `TypingInput.cs` — captures keypresses while player is in range, advances code display, drives LOC/sec
+- `ComputerDisplay.cs` — IDE-style scrolling code feed, line numbers, persists file position between visits
+- `ComboMultiplier.cs` — velocity-based LOC/sec: each keypress instantly bumps the rate, hard cutoff to 0 after 0.3s of no typing
+- `ComputerProximity.cs` — SphereCollider trigger on Desk activates/deactivates typing on player entry/exit
+- `PlayerController.cs` — movement frozen while at computer; Escape exits and re-enables movement
+- GStack source code bundled as `Assets/Resources/GStackSourceCode.txt`
+- "ESC to exit" label on code panel top-right
 
 **Not included:**
-- Actual Gary player character or 3D movement (camera panning stands in for movement for now)
 - Multiple monitors (OpenClaw hustle ticket)
-- Syntax highlighting or IDE chrome/theming (art pass)
-- Persistent LOC/sec across sessions
+- Syntax highlighting or IDE theming (art pass)
+- Persistent file position across Play sessions (resets on game start)
 
 ### Key Fields
 
 | Field | Owner | Type | Notes |
 |-------|-------|------|-------|
-| `corpusText` | `ComputerDisplay` | `string` | Full GStack source loaded from Resources |
-| `charIndex` | `ComputerDisplay` | `int` | Current position in corpus; wraps at end |
+| `_corpus` | `ComputerDisplay` | `string` | Full GStack source loaded from Resources |
+| `_charIndex` | `ComputerDisplay` | `int` | Position in corpus; persists between visits, wraps at end |
+| `_lineNumber` | `ComputerDisplay` | `int` | Current line number; shown in gutter, resets on corpus wrap |
 | `charsPerKeypress` | `ComputerDisplay` | `int` | Characters advanced per keypress (default: 3) |
-| `multiplier` | `ComboMultiplier` | `float` | Current streak multiplier, 1.0–3.0 |
-| `baseLocPerSec` | `ComboMultiplier` | `float` | LOC/sec at 1× (default: 5f) |
-| `decayDelay` | `ComboMultiplier` | `float` | Seconds of no typing before decay begins (default: 1.5s) |
-| `isActive` | `TypingInput` | `bool` | True when player is within proximity trigger |
+| `Current` | `ComboMultiplier` | `float` | Current LOC/sec rate; uncapped |
+| `bumpPerKeypress` | `ComboMultiplier` | `float` | LOC/sec added per keypress (default: 2f) |
+| `stopThreshold` | `ComboMultiplier` | `float` | Seconds before hard cutoff to 0 (default: 0.3s) |
+| `IsActive` | `TypingInput` | `bool` | True when player is within proximity trigger |
 
 ## Decisions
 
-- **Scrolling code feed styled like an IDE:** Dark background panel, monospace font, lines scroll upward as new ones appear. No syntax highlighting this pass — plain white text on dark bg.
-- **Combo multiplier (1×–3×):** Typing cadence over a 1-second rolling window drives the multiplier. Fast sustained typing → 3×. Slowing past threshold → decays back toward 1× over 1.5s. `LOCPerSec = baseLocPerSec * multiplier` is pushed to `GameManager` every frame.
-- **GStack source as corpus:** Bundled as a plaintext `.txt` asset. Cycles continuously — when `charIndex` reaches end, wraps to 0. No network fetch needed.
-- **Proximity auto-focus:** A `SphereCollider` (trigger, radius ~2m) on the desk detects the `Player` GameObject (tagged `CameraPivot`) entering/exiting. Uses `OnTriggerStay` as fallback for missed enters. On activation: UI panel shows, `TypingInput.isActive = true`. On exit: panel hides, `LOCPerSec` resets to 0.
-- **Per-keypress corpus advance:** Each keypress moves `charIndex` forward by `charsPerKeypress` (3). The newly revealed characters are appended to the display buffer. When a newline is hit, it creates a new line in the scroll view.
+- **Velocity-based LOC/sec:** Each keypress instantly adds `bumpPerKeypress` to LOC/sec. After `stopThreshold` seconds of no typing, snaps to 0. No multiplier — uncapped and directly proportional to typing speed.
+- **LOC count on newlines only:** `GameManager.AddLOC()` is called only when the corpus advances past a `\n`. One real line of code = one LOC.
+- **Dollars continuous, LOC discrete:** Dollars flow every frame via `GameManager.Update()` based on LOCPerSec. LOC count increments on newlines. These are decoupled.
+- **File position persists between visits:** `_charIndex` and `_lineNumber` are not reset on `Deactivate()`. Display buffer clears but picks up from the same position in the file on next visit.
+- **Proximity — OnTriggerStay fallback:** Uses both `OnTriggerEnter` and `OnTriggerStay` to catch cases where the player starts inside the trigger zone.
+- **Escape to exit:** Pressing Escape deactivates the display, resets LOC/sec to 0, and re-enables player movement.
+- **LOC/sec HUD throttled:** Display updates every 0.5s, rounded to 1 decimal. Underlying rate updates every frame.
+- **Line numbers:** Right-aligned 4-char gutter prepended to each line (`   1 `, `  42 `). Resets when corpus wraps.
 
 ## Context
 
-- Follows the established interaction pattern: proximity triggers UI overlay, camera never moves
-- `TypingInput` calls `GameManager.AddLOC()` per keypress AND updates `LOCPerSec` via `ComboMultiplier` — these are separate concerns
-- The camera pivot GameObject (or a dedicated invisible "player" marker) is the proximity detection target
-- GStack source corpus is bundled as `Assets/Resources/GStackSourceCode.txt`
-- No new packages — TextMeshPro (already available via UGUI package) handles the monospace display
+- Follows mission.md interaction pattern: proximity triggers UI overlay, camera never moves
+- Player tagged `CameraPivot` with `SphereCollider` (non-trigger) is the proximity detection target
+- `ComboMultiplier` and `ComputerProximity` both live on the `Desk` GameObject
+- No new packages — TextMeshPro handles monospace display
