@@ -33,7 +33,12 @@ public class TypingInput : MonoBehaviour
         comboMultiplier.Tick(Time.deltaTime);
 
         if (IsActive && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
             IsActive = false;
+            computerDisplay.Deactivate();
+            comboMultiplier.Reset();
+            GameManager.Instance.SetLOCPerSec(0f);
+        }
     }
 
     private void OnTextInput(char c)

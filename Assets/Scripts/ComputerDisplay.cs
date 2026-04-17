@@ -12,6 +12,7 @@ public class ComputerDisplay : MonoBehaviour
     private string _corpus;
     private int _charIndex;
     private string _buffer = "";
+    private int _lineNumber = 1;
 
     void Awake()
     {
@@ -36,7 +37,12 @@ public class ComputerDisplay : MonoBehaviour
         {
             char c = _corpus[_charIndex];
             _buffer += c;
-            if (c == '\n') newlines++;
+            if (c == '\n')
+            {
+                newlines++;
+                _lineNumber++;
+                _buffer += $"{_lineNumber,4} ";
+            }
             _charIndex = (_charIndex + 1) % _corpus.Length;
         }
 
@@ -47,9 +53,8 @@ public class ComputerDisplay : MonoBehaviour
 
     public void Activate()
     {
-        _buffer = "";
-        _charIndex = 0;
-        codeText.text = "";
+        _buffer = $"{_lineNumber,4} ";
+        codeText.text = _buffer;
         panel.SetActive(true);
         StartCoroutine(ScrollToTop());
     }

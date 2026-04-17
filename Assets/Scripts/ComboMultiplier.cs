@@ -2,49 +2,46 @@ using UnityEngine;
 
 public class ComboMultiplier : MonoBehaviour
 {
-    [SerializeField] private float baseLocPerSec = 5f;
-    [SerializeField] private float decayDelay = 1.5f;
-    [SerializeField] private float multiplierStep = 0.2f;
-    [SerializeField] private float maxMultiplier = 3f;
+    [SerializeField] private float bumpPerKeypress = 2f;
+    [SerializeField] private float decaySpeed = 5f;
+    [SerializeField] private float stopThreshold = 0.3f;
 
-    public float Current { get; private set; } = 1f;
+    public float Current { get; private set; } = 0f;
 
-    private float _timeSinceLastKeypress = 0f;
-    private bool _active = false;
+    private float _timeSinceLastKey = 0f;
 
     public void RegisterKeypress()
     {
-        _timeSinceLastKeypress = 0f;
-        _active = true;
-        Current = Mathf.Min(Current + multiplierStep, maxMultiplier);
+        _timeSinceLastKey = 0f;
+        Current += bumpPerKeypress;
         Push();
     }
 
     public void Tick(float deltaTime)
     {
-        if (!_active) return;
+        if (Current <= 0f) return;
 
-        _timeSinceLastKeypress += deltaTime;
-        if (_timeSinceLastKeypress >= decayDelay)
+        _timeSinceLastKey += deltaTime;
+        if (_timeSinceLastKey >= stopThreshold)
         {
-            Current = Mathf.Max(1f, Current - multiplierStep * deltaTime * 3f);
+            Current = 0f;
             Push();
-
-            if (Mathf.Approximately(Current, 1f))
-                _active = false;
+            return;
         }
+
+        Current = Mathf.Lerp(Current, 0f, decaySpeed * deltaTime);
+        if (Current < 0.05f) Current = 0f;
+        Push();
     }
 
     public void Reset()
     {
-        Current = 1f;
-        _timeSinceLastKeypress = 0f;
-        _active = false;
+        Current = 0f;
         Push();
     }
 
     private void Push()
     {
-        GameManager.Instance.SetLOCPerSec(baseLocPerSec * Current);
+        GameManager.Instance.SetLOCPerSec(Current);
     }
 }
