@@ -11,6 +11,8 @@
 | Matt McGuire  | Level Design/Mechanics |
 | Michael Hayes | Level Design           |
 
+## In-Progress Demo
+[GTycoon Update](https://drive.google.com/file/d/1ZTZOeJ9MSvDiHpVnWicEyhG8n8s5fzgh/view?usp=sharing)
 
 ## Project Spec
 
@@ -22,9 +24,9 @@
 | Title                                     | Assignee | Due Date | Status      | Description                                                                                                                |
 | ----------------------------------------- | -------- | -------- | ----------- | -------------------------------------------------------------------------------------------------------------------------- |
 | Create project with cube                  | Michael  | 4/17     | Done        | Connect git repo and share with Michael Hayes, Matthew McGuire, and Kaylee Lace.                                           |
-| Generate the base map                     | Michael  | 4/17     | Not Started | Create game manager for balance and base room.                                                                             |
+| Generate the base map                     | Michael  | 4/17     | Done | Create game manager for balance and base room.                                                                             |
 | Create slot machine functionality (logic) | Matt     | 4/17     | Not Started |                                                                                                                            |
-| Create vibe coding computer (logic)       | Michael  | 4/17     | Not Started | Use [hackertyper.net](https://hackertyper.net/) as inspiration for code autofill and Gary Tan real-world open source code. |
+| Create vibe coding computer (logic)       | Michael  | 4/17     | Done | Use [hackertyper.net](https://hackertyper.net/) as inspiration for code autofill and Gary Tan real-world open source code. |
 | Create assets for Gary's apartment        | Kaylee   | 4/24     | Not Started | Design Gary's computer, second monitor, and airbed hustle.                                                                 |
 
 
