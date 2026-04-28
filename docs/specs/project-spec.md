@@ -26,8 +26,18 @@ The single 3D environment where all primary gameplay takes place. It begins as a
 A corkboard on the apartment wall displays all available Hustles — the only place Gary spends Dollars. Each Hustle has a one-time cost, generates passive income once purchased, and spawns a physical object in the apartment.
 
 - Freelance Bug Bounty — always available. Lowest cost. Generates a flat passive Dollar/sec. Spawns a sticky note on the wall.
+  - free hustle
+  - sticky notes spawn onto the wall every 15 seconds; a ui tooltip appears to note that the user must claim the note
+  - complexity the metric the user can see
+  - the user must approach and activsate the bug bounty
+  - complte the dead by daylight style generator check
 - Airbed — sublets floor space. Generates passive Dollar/sec per unit. Supports up to 3 units at increasing cost and diminishing return per unit. Spawns a blow-up mattress and pillow on the floor per unit purchased.
+  - low passive money boost for each unit activated
 - OpenClaw via Hostinger — highest cost. Runs an AI coding assistant that generates passive Dollar/sec and passive LOC/sec. The only Hustle that boosts LOC output. Spawns a glowing terminal window on a new monitor on the desk.
+  - monopoly style progression: buy the first open claw for a lot, which activates a _x passive loc increase; then each openclaw agent will cost exponentially, eventaully you have 100x passive loc
+    - passive loc is tied to the number of skills per agent
+  - buy skills which boosts the active loc when typing
+  - activates the server table (toggle on the model): buy more mac minis which boosts the passive loc
 
 ### Slots Room
 
@@ -39,4 +49,5 @@ Apartment 168 — a lucky casino number — down the hall from Gary's unit. Gary
 - **Core typing loop.** Player types any key to generate LOC in real time. Typing speed determines LOC/sec. LOC convert to Dollars at a fixed visible rate on the HUD. Dollars are spent at the Hustle board to activate Hustles.
 - **Hustle board.** Player approaches the corkboard to open the panel. All three Hustles are displayed with name, cost, and effect. Purchasing deducts. Dollars immediately and spawns the Hustle's object in the apartment. The panel closes when the player steps away.
 - **Slots Room.** Player walks to the hallway and enters Apartment 168. Player sets a wager from their current Dollar balance and pulls the lever. The slots spin and resolve immediately — win, lose, or jackpot — and the balance updates. Player can pull again or leave.
+- End goal is becoming CEO of YCombinator which is an expensive buyout
 
