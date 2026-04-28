@@ -1,4 +1,4 @@
-# GTycoon Sim
+# GTycoon
 
 *Gary's created GStack and GBrain. Now it's time for the next G-branded experience.*
 
