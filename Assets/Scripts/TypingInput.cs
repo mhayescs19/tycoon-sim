@@ -35,7 +35,7 @@ public class TypingInput : MonoBehaviour
         if (IsActive && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             IsActive = false;
-            computerDisplay.Deactivate();
+            computerDisplay.ShowDashboard();
             comboMultiplier.Reset();
             GameManager.Instance.SetLOCPerSec(0f);
         }

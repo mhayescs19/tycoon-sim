@@ -45,7 +45,7 @@ public class ComputerProximity : MonoBehaviour
     private void Activate()
     {
         _isActive = true;
-        typingInput.IsActive = true;
+        typingInput.IsActive = false;
         computerDisplay.Activate();
         Debug.Log("[Proximity] Activated computer display");
     }
