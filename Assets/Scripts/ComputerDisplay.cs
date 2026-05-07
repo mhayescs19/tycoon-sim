@@ -1,8 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class ComputerDisplay : MonoBehaviour
@@ -29,6 +31,17 @@ public class ComputerDisplay : MonoBehaviour
     private string _pendingHustleName;
     private int _pendingHustlePrice;
 
+    private BugBountyManager _bugBountyManager;
+    private GameObject _bugBountyPanelRoot;
+    private TextMeshProUGUI _activeBountiesText;
+    private TextMeshProUGUI _successfulBountiesText;
+    private TextMeshProUGUI _failedBountiesText;
+    private TextMeshProUGUI _spawnInfoText;
+    private Button _bugBountyBackButton;
+    private TextMeshProUGUI _bugBountyCardLabel;
+    private float _bugBountyCardRefreshTimer;
+    private int _ignoreEscapeCloseUntilFrame = -1;
+
     void Awake()
     {
         TextAsset asset = Resources.Load<TextAsset>("GStackSourceCode");
@@ -45,7 +58,47 @@ public class ComputerDisplay : MonoBehaviour
         if (typingInput == null)
             typingInput = FindFirstObjectByType<TypingInput>();
 
+        _bugBountyManager = FindFirstObjectByType<BugBountyManager>();
+        if (_bugBountyManager == null)
+        {
+            var managerObj = new GameObject("BugBountyManager");
+            _bugBountyManager = managerObj.AddComponent<BugBountyManager>();
+        }
+
+        _bugBountyManager.OnBountyDataChanged += RefreshBugBountyPanel;
+        _bugBountyManager.OnBountySpawned += OnBountySpawned;
+
         panel.SetActive(false);
+    }
+
+    void OnDestroy()
+    {
+        if (_bugBountyManager == null) return;
+        _bugBountyManager.OnBountyDataChanged -= RefreshBugBountyPanel;
+        _bugBountyManager.OnBountySpawned -= OnBountySpawned;
+    }
+
+    void Update()
+    {
+        if (panel.activeSelf && _dashboardRoot != null && _dashboardRoot.activeSelf)
+        {
+            _bugBountyCardRefreshTimer += Time.deltaTime;
+            if (_bugBountyCardRefreshTimer >= 0.25f)
+            {
+                _bugBountyCardRefreshTimer = 0f;
+                RefreshBugBountyCardSubtitle();
+            }
+        }
+
+        if (Keyboard.current == null || !panel.activeSelf) return;
+        if (!Keyboard.current.escapeKey.wasPressedThisFrame) return;
+        if (Time.frameCount <= _ignoreEscapeCloseUntilFrame) return;
+        if (_dashboardRoot == null || !_dashboardRoot.activeSelf) return;
+        if (_bugBountyPanelRoot != null && _bugBountyPanelRoot.activeSelf) return;
+        if (_purchasePopupRoot != null && _purchasePopupRoot.activeSelf) return;
+        if (_isTypingMode) return;
+
+        Deactivate();
     }
 
     public int TypeCharacters(int count)
@@ -77,6 +130,7 @@ public class ComputerDisplay : MonoBehaviour
         SetTypingEnabled(false);
         _isTypingMode = false;
         _dashboardRoot.SetActive(true);
+        if (_bugBountyPanelRoot != null) _bugBountyPanelRoot.SetActive(false);
         scrollRect.gameObject.SetActive(false);
         panel.SetActive(true);
         FocusDefaultCard();
@@ -96,7 +150,10 @@ public class ComputerDisplay : MonoBehaviour
         SetTypingEnabled(false);
         _isTypingMode = false;
         _dashboardRoot.SetActive(true);
+        if (_bugBountyPanelRoot != null) _bugBountyPanelRoot.SetActive(false);
         scrollRect.gameObject.SetActive(false);
+        // TypingInput also uses Esc to return here; ignore close-on-Esc for this frame.
+        _ignoreEscapeCloseUntilFrame = Time.frameCount + 1;
         FocusDefaultCard();
     }
 
@@ -118,6 +175,7 @@ public class ComputerDisplay : MonoBehaviour
         codeText.text = _buffer;
         _isTypingMode = true;
         _dashboardRoot.SetActive(false);
+        if (_bugBountyPanelRoot != null) _bugBountyPanelRoot.SetActive(false);
         scrollRect.gameObject.SetActive(true);
         SetTypingEnabled(true);
         StartCoroutine(ScrollToTop());
@@ -160,11 +218,12 @@ public class ComputerDisplay : MonoBehaviour
 
         CreateTitle();
         CreateCard("Vibe Code", "Launch coding interface", false, EnterVibeCodeMode);
-        CreateCard("Bug Bounty", "Active (placeholder in this phase)", false, () => OnPlaceholderCardPressed("Bug Bounty"));
+        CreateCard("Bug Bounty", "View active, successful, and failed bounties", false, ShowBugBountyPanel);
         CreateCard("OpenClaw", "Purchase Hustle - $200", true, () => ShowPurchasePopup("OpenClaw", 200));
         CreateCard("Airbed", "Purchase Hustle - $100", true, () => ShowPurchasePopup("Airbed", 100));
         ConfigureNavigation();
         CreatePurchasePopup();
+        CreateBugBountyPanel();
 
         scrollRect.gameObject.SetActive(false);
         _dashboardBuilt = true;
@@ -228,6 +287,12 @@ public class ComputerDisplay : MonoBehaviour
 
         if (isLocked)
             CreateLockedBadge(buttonObj.transform);
+
+        if (title == "Bug Bounty")
+        {
+            _bugBountyCardLabel = label;
+            RefreshBugBountyCardSubtitle();
+        }
 
         _cardButtons.Add(button);
         if (_defaultButton == null) _defaultButton = button;
@@ -382,6 +447,159 @@ public class ComputerDisplay : MonoBehaviour
     {
         _purchasePopupRoot.SetActive(false);
         FocusDefaultCard();
+    }
+
+    private void ShowBugBountyPanel()
+    {
+        _dashboardRoot.SetActive(false);
+        scrollRect.gameObject.SetActive(false);
+        if (_purchasePopupRoot != null) _purchasePopupRoot.SetActive(false);
+        _bugBountyPanelRoot.SetActive(true);
+        RefreshBugBountyPanel();
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(_bugBountyBackButton.gameObject);
+    }
+
+    private void CreateBugBountyPanel()
+    {
+        _bugBountyPanelRoot = new GameObject("BugBountyPanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+        _bugBountyPanelRoot.transform.SetParent(panel.transform, false);
+
+        var rootRect = (RectTransform)_bugBountyPanelRoot.transform;
+        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+        rootRect.sizeDelta = new Vector2(720f, 520f);
+
+        var image = _bugBountyPanelRoot.GetComponent<Image>();
+        image.color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
+
+        var layout = _bugBountyPanelRoot.GetComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(20, 20, 18, 18);
+        layout.spacing = 8f;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.childControlHeight = false;
+        layout.childControlWidth = true;
+
+        var title = CreatePanelText(_bugBountyPanelRoot.transform, "Bug Bounties", 30, 42f, TextAlignmentOptions.Left);
+        title.color = Color.white;
+
+        _spawnInfoText = CreatePanelText(_bugBountyPanelRoot.transform, "Spawning every 15-45 seconds", 18, 26f, TextAlignmentOptions.Left);
+        _spawnInfoText.color = new Color(0.75f, 0.92f, 0.75f, 1f);
+
+        _activeBountiesText = CreatePanelText(_bugBountyPanelRoot.transform, "Active", 18, 150f, TextAlignmentOptions.TopLeft);
+        _successfulBountiesText = CreatePanelText(_bugBountyPanelRoot.transform, "Successful", 18, 130f, TextAlignmentOptions.TopLeft);
+        _failedBountiesText = CreatePanelText(_bugBountyPanelRoot.transform, "Failed", 18, 130f, TextAlignmentOptions.TopLeft);
+
+        _bugBountyBackButton = CreatePopupButton(_bugBountyPanelRoot.transform, "BackToDashboardButton", "Back to Dashboard", ShowDashboard);
+
+        Navigation backNav = new Navigation { mode = Navigation.Mode.Explicit };
+        backNav.selectOnUp = _bugBountyBackButton;
+        backNav.selectOnDown = _bugBountyBackButton;
+        backNav.selectOnLeft = _bugBountyBackButton;
+        backNav.selectOnRight = _bugBountyBackButton;
+        _bugBountyBackButton.navigation = backNav;
+
+        _bugBountyPanelRoot.SetActive(false);
+        RefreshBugBountyPanel();
+    }
+
+    private TextMeshProUGUI CreatePanelText(Transform parent, string defaultText, int fontSize, float preferredHeight, TextAlignmentOptions alignment)
+    {
+        var obj = new GameObject("TextBlock", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+        obj.transform.SetParent(parent, false);
+        var layout = obj.GetComponent<LayoutElement>();
+        layout.preferredHeight = preferredHeight;
+
+        var text = obj.GetComponent<TextMeshProUGUI>();
+        text.font = codeText.font;
+        text.fontSize = fontSize;
+        text.text = defaultText;
+        text.alignment = alignment;
+        text.color = Color.white;
+        text.enableWordWrapping = true;
+        return text;
+    }
+
+    private void RefreshBugBountyPanel()
+    {
+        if (_bugBountyPanelRoot == null || _bugBountyManager == null) return;
+
+        var activeBuilder = new StringBuilder();
+        activeBuilder.AppendLine("ACTIVE BOUNTIES (claim on wall notes):");
+        if (_bugBountyManager.ActiveBounties.Count == 0)
+        {
+            activeBuilder.AppendLine("- No active notes yet.");
+        }
+        else
+        {
+            foreach (var bounty in _bugBountyManager.ActiveBounties)
+            {
+                if (bounty == null)
+                {
+                    activeBuilder.AppendLine("- Unknown bounty ($0) | Tier ?");
+                    continue;
+                }
+
+                string title = "Unknown bounty";
+                if (bounty != null && bounty.Definition != null && !string.IsNullOrWhiteSpace(bounty.Definition.Title))
+                    title = bounty.Definition.Title;
+                int reward = (bounty != null && bounty.Definition != null) ? bounty.Definition.Reward : 0;
+                activeBuilder.AppendLine($"- {title} (${reward}) | Tier {bounty.DifficultyTier}");
+            }
+        }
+        _activeBountiesText.text = activeBuilder.ToString();
+
+        var successBuilder = new StringBuilder();
+        successBuilder.AppendLine($"SUCCESSFUL BOUNTIES (Total Earned: ${_bugBountyManager.TotalEarned:F0})");
+        if (_bugBountyManager.SuccessfulBounties.Count == 0)
+        {
+            successBuilder.AppendLine("- None yet.");
+        }
+        else
+        {
+            int shown = Mathf.Min(5, _bugBountyManager.SuccessfulBounties.Count);
+            for (int i = 0; i < shown; i++)
+            {
+                var item = _bugBountyManager.SuccessfulBounties[i];
+                successBuilder.AppendLine($"- {item.Title}: +${item.Amount} ({item.Timestamp})");
+            }
+        }
+        _successfulBountiesText.text = successBuilder.ToString();
+
+        var failedBuilder = new StringBuilder();
+        failedBuilder.AppendLine($"FAILED BOUNTIES (Total Penalties: ${_bugBountyManager.TotalPenalties:F0})");
+        if (_bugBountyManager.FailedBounties.Count == 0)
+        {
+            failedBuilder.AppendLine("- None yet.");
+        }
+        else
+        {
+            int shown = Mathf.Min(5, _bugBountyManager.FailedBounties.Count);
+            for (int i = 0; i < shown; i++)
+            {
+                var item = _bugBountyManager.FailedBounties[i];
+                failedBuilder.AppendLine($"- {item.Title}: -${item.Amount} ({item.Timestamp})");
+            }
+        }
+        _failedBountiesText.text = failedBuilder.ToString();
+
+        _spawnInfoText.text = $"Next bounty in ~{_bugBountyManager.SpawnTimerRemaining:F0}s (interval rolls 15-45s)";
+    }
+
+    private void OnBountySpawned(string message)
+    {
+        RefreshBugBountyCardSubtitle();
+        RefreshBugBountyPanel();
+        Debug.Log($"[ComputerDisplay] {message}");
+    }
+
+    private void RefreshBugBountyCardSubtitle()
+    {
+        if (_bugBountyCardLabel == null || _bugBountyManager == null) return;
+
+        _bugBountyCardLabel.text =
+            $"Bug Bounty\n<size=65%>Active: {_bugBountyManager.ActiveBounties.Count} | Next: {_bugBountyManager.SpawnTimerRemaining:F0}s</size>";
     }
 
     private void ConfigureNavigation()
