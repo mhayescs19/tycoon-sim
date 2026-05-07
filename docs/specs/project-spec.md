@@ -23,7 +23,15 @@ The single 3D environment where all primary gameplay takes place. It begins as a
 
 ### Hustle
 
-A corkboard on the apartment wall displays all available Hustles — the only place Gary spends Dollars. Each Hustle has a one-time cost, generates passive income once purchased, and spawns a physical object in the apartment.
+A computer dashboard is the single place where Hustles are viewed and managed. The dashboard displays hustle cards, handles purchases, and is the only place Gary spends Dollars on Hustles. Each Hustle has a one-time cost, generates passive income once purchased, and spawns a physical object in the apartment.
+
+Default hustle cards shown on the computer dashboard:
+- Vibe Code
+- Bug Bounty
+- OpenClaw
+- Airbed
+
+OpenClaw and Airbed start as locked options in the dashboard and include grayed-out "Purchase Hustle" cards/buttons until the player has enough money to unlock them.
 
 - Freelance Bug Bounty — always available. Lowest cost. Generates a flat passive Dollar/sec. Spawns a sticky note on the wall.
   - free hustle
@@ -46,8 +54,8 @@ Apartment 168 — a lucky casino number — down the hall from Gary's unit. Gary
 #### 4. User-Facing Behavior
 
 - **Session start.** Player lands inside the apartment. Gary's computer is on the desk. LOC count and LOC/sec are visible as ambient HUD elements. A single line sets the scene: "San Francisco. $47 in the bank. One idea."
-- **Core typing loop.** Player types any key to generate LOC in real time. Typing speed determines LOC/sec. LOC convert to Dollars at a fixed visible rate on the HUD. Dollars are spent at the Hustle board to activate Hustles.
-- **Hustle board.** Player approaches the corkboard to open the panel. All three Hustles are displayed with name, cost, and effect. Purchasing deducts. Dollars immediately and spawns the Hustle's object in the apartment. The panel closes when the player steps away.
+- **Core typing loop.** Player types any key to generate LOC in real time. Typing speed determines LOC/sec. LOC convert to Dollars at a fixed visible rate on the HUD. Dollars are spent from the computer dashboard to activate Hustles.
+- **Computer hustle dashboard.** Player interacts with Gary's computer to open the dashboard. Hustles are shown as cards (Vibe Code, Bug Bounty, OpenClaw, Airbed) with name, cost, and effect. OpenClaw and Airbed show grayed-out "Purchase Hustle" cards/buttons while locked. Purchasing deducts Dollars immediately and spawns the Hustle's object in the apartment. Hustles are managed from this computer dashboard.
 - **Slots Room.** Player walks to the hallway and enters Apartment 168. Player sets a wager from their current Dollar balance and pulls the lever. The slots spin and resolve immediately — win, lose, or jackpot — and the balance updates. Player can pull again or leave.
 - End goal is becoming CEO of YCombinator which is an expensive buyout
 
