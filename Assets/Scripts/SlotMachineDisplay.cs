@@ -6,40 +6,20 @@ using UnityEngine.UI;
 
 public class SlotMachineDisplay : MonoBehaviour
 {
-    private const int ReelCount = 3;
-
     [SerializeField] private GameObject panel;
-    [SerializeField] private Sprite[] slotSprites; // Assign sprites in Inspector
+    [SerializeField] private Sprite[] slotSprites; // Assign 5 sprites in Inspector
     [SerializeField] private TextMeshProUGUI fontSource; // Assign the same TMP as ComputerDisplay.codeText
-    [SerializeField, Min(0f)] private float spinCost = 10f;
-    [SerializeField, Min(0f)] private float jackpotAmount = 100f;
-    [SerializeField, Min(0f)] private float twoMatchAmount = 12f;
-    [SerializeField] private string noFundsMessage = "<color=red>Back to your 9-5 brokie</color>";
-    [SerializeField] private string noMatchMessage = "<color=red>No match. Try again!</color>";
-    [SerializeField] private string twoMatchMessage = "<color=green>Nice! Two match!</color>";
-    [SerializeField] private string jackpotMessage = "<color=yellow>JACKPOT! You win!</color>";
-    [SerializeField] private string unavailableMessage = "<color=red>Slot machine unavailable</color>";
 
     private GameObject _root;
     private TextMeshProUGUI _titleText;
-    private Image[] _slotImages = new Image[ReelCount];
+    private Image[] _slotImages = new Image[3];
     private Button _spinButton;
     private TextMeshProUGUI _resultText;
 
     private bool _isActive;
 
-    private enum SpinOutcome
-    {
-        Unavailable,
-        InsufficientFunds,
-        NoMatch,
-        TwoMatch,
-        Jackpot
-    }
-
     void Start()
     {
-        ValidateConfiguration();
         BuildUI();
         panel.SetActive(false);
     }
@@ -118,7 +98,7 @@ public class SlotMachineDisplay : MonoBehaviour
         slotRowLayout.childForceExpandHeight = false;
         slotRowLayout.childForceExpandWidth = false;
 
-        for (int i = 0; i < _slotImages.Length; i++)
+        for (int i = 0; i < 3; i++)
         {
             _slotImages[i] = CreateSlotImage(slotRow.transform, 220f, 220f);
         }
@@ -204,86 +184,48 @@ public class SlotMachineDisplay : MonoBehaviour
 
     private void OnSpinPressed()
     {
-        if (slotSprites == null || slotSprites.Length == 0 || GameManager.Instance == null)
-        {
-            ApplyOutcome(SpinOutcome.Unavailable);
+        float spinCost = 10f;
+
+        // no spin if not enough moneys
+        if (GameManager.Instance?.DollarBalance < spinCost) {
+            _resultText.text = "<color=red>Back to your 9-5 brokie</color>";
             return;
         }
+        
+        GameManager.Instance?.SpendDollars(spinCost);
 
-        SpinOutcome outcome = ResolveSpin();
-        ApplyOutcome(outcome);
-    }
-
-    private SpinOutcome ResolveSpin()
-    {
-        if (GameManager.Instance.DollarBalance < spinCost)
-            return SpinOutcome.InsufficientFunds;
-
-        GameManager.Instance.SpendDollars(spinCost);
-
-        int[] values = RollSlots();
-        return EvaluateOutcome(values);
-    }
-
-    private int[] RollSlots()
-    {
-        int[] values = new int[_slotImages.Length];
-        for (int i = 0; i < _slotImages.Length; i++)
+        int[] values = new int[3];
+        for (int i = 0; i < 3; i++)
         {
-            values[i] = Random.Range(0, slotSprites.Length);
-            _slotImages[i].sprite = slotSprites[values[i]];
+            values[i] = Random.Range(0, slotSprites != null ? slotSprites.Length : 0);
+            _slotImages[i].sprite = slotSprites != null && slotSprites.Length > 0 ? slotSprites[values[i]] : null;
         }
 
-        return values;
-    }
-
-    private SpinOutcome EvaluateOutcome(int[] values)
-    {
-        if (values == null || values.Length != ReelCount)
-            return SpinOutcome.Unavailable;
+        // Payouts
+        float jackpotAmount = 100f;
+        float twoMatchAmount = 12f;
 
         if (values[0] == values[1] && values[1] == values[2])
-            return SpinOutcome.Jackpot;
-        if (values[0] == values[1] || values[1] == values[2] || values[0] == values[2])
-            return SpinOutcome.TwoMatch;
-        return SpinOutcome.NoMatch;
-    }
-
-    private void ApplyOutcome(SpinOutcome outcome)
-    {
-        switch (outcome)
         {
-            case SpinOutcome.Jackpot:
-                _resultText.text = jackpotMessage;
-                GameManager.Instance?.AddDollars(jackpotAmount);
-                break;
-            case SpinOutcome.TwoMatch:
-                _resultText.text = twoMatchMessage;
-                GameManager.Instance?.AddDollars(twoMatchAmount);
-                break;
-            case SpinOutcome.InsufficientFunds:
-                _resultText.text = noFundsMessage;
-                break;
-            case SpinOutcome.Unavailable:
-                _resultText.text = unavailableMessage;
-                break;
-            default:
-                _resultText.text = noMatchMessage;
-                break;
+            _resultText.text = "<color=yellow>JACKPOT! You win!</color>";
+            GameManager.Instance?.AddDollars(jackpotAmount);
+        }
+        else if (values[0] == values[1] || values[1] == values[2] || values[0] == values[2])
+        {
+            _resultText.text = "<color=green>Nice! Two match!</color>";
+            GameManager.Instance?.AddDollars(twoMatchAmount);
+        }
+        else
+        {
+            _resultText.text = "<color=red>No match. Try again!</color>";
         }
     }
 
     private void ResetSlots()
     {
-        for (int i = 0; i < _slotImages.Length; i++)
+        for (int i = 0; i < 3; i++)
         {
             _slotImages[i].sprite = slotSprites != null && slotSprites.Length > 0 ? slotSprites[0] : null;
         }
-    }
-
-    private void ValidateConfiguration()
-    {
-        if (slotSprites == null || slotSprites.Length == 0)
-            Debug.LogWarning("[SlotMachineDisplay] No slotSprites configured.", this);
     }
 }
