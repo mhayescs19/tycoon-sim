@@ -7,8 +7,16 @@ using UnityEngine.UI;
 public class SlotMachineDisplay : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
-    [SerializeField] private Sprite[] slotSprites; // Assign 5 sprites in Inspector
+    [SerializeField] private Sprite[] slotSprites; // Assign sprites in Inspector
     [SerializeField] private TextMeshProUGUI fontSource; // Assign the same TMP as ComputerDisplay.codeText
+    [SerializeField, Min(0f)] private float spinCost = 10f;
+    [SerializeField, Min(0f)] private float jackpotAmount = 100f;
+    [SerializeField, Min(0f)] private float twoMatchAmount = 12f;
+    [SerializeField] private string noFundsMessage = "<color=red>Back to your 9-5 brokie</color>";
+    [SerializeField] private string noMatchMessage = "<color=red>No match. Try again!</color>";
+    [SerializeField] private string twoMatchMessage = "<color=green>Nice! Two match!</color>";
+    [SerializeField] private string jackpotMessage = "<color=yellow>JACKPOT! You win!</color>";
+    [SerializeField] private string unavailableMessage = "<color=red>Slot machine unavailable</color>";
 
     private GameObject _root;
     private TextMeshProUGUI _titleText;
@@ -17,6 +25,15 @@ public class SlotMachineDisplay : MonoBehaviour
     private TextMeshProUGUI _resultText;
 
     private bool _isActive;
+
+    private enum SpinOutcome
+    {
+        Unavailable,
+        InsufficientFunds,
+        NoMatch,
+        TwoMatch,
+        Jackpot
+    }
 
     void Start()
     {
@@ -184,40 +201,69 @@ public class SlotMachineDisplay : MonoBehaviour
 
     private void OnSpinPressed()
     {
-        float spinCost = 10f;
-
-        // no spin if not enough moneys
-        if (GameManager.Instance?.DollarBalance < spinCost) {
-            _resultText.text = "<color=red>Back to your 9-5 brokie</color>";
+        if (slotSprites == null || slotSprites.Length == 0 || GameManager.Instance == null)
+        {
+            ApplyOutcome(SpinOutcome.Unavailable);
             return;
         }
-        
-        GameManager.Instance?.SpendDollars(spinCost);
 
-        int[] values = new int[3];
-        for (int i = 0; i < 3; i++)
+        SpinOutcome outcome = ResolveSpin();
+        ApplyOutcome(outcome);
+    }
+
+    private SpinOutcome ResolveSpin()
+    {
+        if (GameManager.Instance.DollarBalance < spinCost)
+            return SpinOutcome.InsufficientFunds;
+
+        GameManager.Instance.SpendDollars(spinCost);
+
+        int[] values = RollSlots();
+        return EvaluateOutcome(values);
+    }
+
+    private int[] RollSlots()
+    {
+        int[] values = new int[_slotImages.Length];
+        for (int i = 0; i < _slotImages.Length; i++)
         {
-            values[i] = Random.Range(0, slotSprites != null ? slotSprites.Length : 0);
-            _slotImages[i].sprite = slotSprites != null && slotSprites.Length > 0 ? slotSprites[values[i]] : null;
+            values[i] = Random.Range(0, slotSprites.Length);
+            _slotImages[i].sprite = slotSprites[values[i]];
         }
 
-        // Payouts
-        float jackpotAmount = 100f;
-        float twoMatchAmount = 12f;
+        return values;
+    }
 
+    private static SpinOutcome EvaluateOutcome(int[] values)
+    {
         if (values[0] == values[1] && values[1] == values[2])
+            return SpinOutcome.Jackpot;
+        if (values[0] == values[1] || values[1] == values[2] || values[0] == values[2])
+            return SpinOutcome.TwoMatch;
+        return SpinOutcome.NoMatch;
+    }
+
+    private void ApplyOutcome(SpinOutcome outcome)
+    {
+        switch (outcome)
         {
-            _resultText.text = "<color=yellow>JACKPOT! You win!</color>";
-            GameManager.Instance?.AddDollars(jackpotAmount);
-        }
-        else if (values[0] == values[1] || values[1] == values[2] || values[0] == values[2])
-        {
-            _resultText.text = "<color=green>Nice! Two match!</color>";
-            GameManager.Instance?.AddDollars(twoMatchAmount);
-        }
-        else
-        {
-            _resultText.text = "<color=red>No match. Try again!</color>";
+            case SpinOutcome.Jackpot:
+                _resultText.text = jackpotMessage;
+                GameManager.Instance?.AddDollars(jackpotAmount);
+                break;
+            case SpinOutcome.TwoMatch:
+                _resultText.text = twoMatchMessage;
+                GameManager.Instance?.AddDollars(twoMatchAmount);
+                break;
+            case SpinOutcome.InsufficientFunds:
+                _resultText.text = noFundsMessage;
+                break;
+            case SpinOutcome.Unavailable:
+                _resultText.text = unavailableMessage;
+                break;
+            default:
+                _resultText.text = noMatchMessage;
+                break;
         }
     }
 

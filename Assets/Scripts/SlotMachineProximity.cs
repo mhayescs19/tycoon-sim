@@ -6,11 +6,13 @@ using UnityEngine.UI;
 public class SlotMachineProximity : MonoBehaviour
 {
     [SerializeField] private SlotMachineDisplay slotMachineDisplay;
+    [SerializeField] private string interactionPromptText = "Press E to gamble!";
 
     private bool _isActive = false;
     private bool _playerInRange;
     private GameObject _promptRoot;
     private TextMeshProUGUI _promptText;
+    private const string PlayerTag = "CameraPivot";
 
     void Start()
     {
@@ -31,14 +33,14 @@ public class SlotMachineProximity : MonoBehaviour
 
     void OnTriggerEnter(Collider other) 
     {
-        if (!other.CompareTag("CameraPivot")) return;
+        if (!IsPlayerCollider(other)) return;
         _playerInRange = true;
         ShowPrompt();
     }
 
     void OnTriggerStay(Collider other)
     {
-        if (!other.CompareTag("CameraPivot")) return;
+        if (!IsPlayerCollider(other)) return;
         _playerInRange = true;
         if (!_isActive) ShowPrompt();
     }
@@ -51,7 +53,7 @@ public class SlotMachineProximity : MonoBehaviour
     }
 
     void OnTriggerExit(Collider other) {
-        if (!other.CompareTag("CameraPivot")) return;
+        if (!IsPlayerCollider(other)) return;
         _playerInRange = false;
         HidePrompt();
 
@@ -88,7 +90,7 @@ public class SlotMachineProximity : MonoBehaviour
         textRect.offsetMax = new Vector2(-8f, -4f);
 
         _promptText = textObj.GetComponent<TextMeshProUGUI>();
-        _promptText.text = "Press E to gamble!!!!!!";
+        _promptText.text = interactionPromptText;
         _promptText.fontSize = 24f;
         _promptText.alignment = TextAlignmentOptions.Center;
         _promptText.color = Color.white;
@@ -99,7 +101,7 @@ public class SlotMachineProximity : MonoBehaviour
     private void ShowPrompt()
     {
         if (_promptRoot == null) return;
-        _promptText.text = "Press E to gamble!";
+        _promptText.text = interactionPromptText;
         _promptRoot.SetActive(true);
     }
 
@@ -107,6 +109,11 @@ public class SlotMachineProximity : MonoBehaviour
     {
         if (_promptRoot == null) return;
         _promptRoot.SetActive(false);
+    }
+
+    private static bool IsPlayerCollider(Collider other)
+    {
+        return other.CompareTag(PlayerTag);
     }
 
 
