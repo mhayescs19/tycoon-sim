@@ -1407,6 +1407,81 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &707013410
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 707013413}
+  - component: {fileID: 707013412}
+  - component: {fileID: 707013411}
+  m_Layer: 5
+  m_Name: SlotMachinePanel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &707013411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 707013410}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 0.392}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &707013412
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 707013410}
+  m_CullTransparentMesh: 1
+--- !u!224 &707013413
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 707013410}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1530404064}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &854985601
 GameObject:
   m_ObjectHideFlags: 0
@@ -1454,7 +1529,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05fcc807c704244588c5898d14e9226e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SlotMachineProximity
-  slotMachineDisplay: {fileID: 1744920074}
+  slotMachineDisplay: {fileID: 1744920076}
 --- !u!65 &854985604
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2283,7 +2358,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 01a54161cf0f844348e601310ec575d8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraController
-  rotateSpeed: 90
   zoomSpeed: 4
   minZoom: 3
   maxZoom: 12
@@ -2389,6 +2463,7 @@ RectTransform:
   - {fileID: 2120124294}
   - {fileID: 1661212293}
   - {fileID: 1744920075}
+  - {fileID: 707013413}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2485,6 +2560,7 @@ MonoBehaviour:
   panel: {fileID: 2120124291}
   codeText: {fileID: 539596908}
   scrollRect: {fileID: 207117872}
+  typingInput: {fileID: 0}
 --- !u!1 &1720593612
 GameObject:
   m_ObjectHideFlags: 0
@@ -2620,7 +2696,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1744920075}
-  - component: {fileID: 1744920074}
+  - component: {fileID: 1744920076}
   m_Layer: 5
   m_Name: SlotMachineDisplay
   m_TagString: Untagged
@@ -2628,21 +2704,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1744920074
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1744920073}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1955dc56b70db4aa4b642d3e3339a20e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SlotMachineDisplay
-  panel: {fileID: 0}
-  codeText: {fileID: 0}
-  scrollRect: {fileID: 0}
 --- !u!224 &1744920075
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2662,6 +2723,26 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1744920076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1744920073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1955dc56b70db4aa4b642d3e3339a20e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SlotMachineDisplay
+  panel: {fileID: 707013410}
+  slotSprites:
+  - {fileID: 21300000, guid: 66b57da57a1814bd0a340bc40342afd6, type: 3}
+  - {fileID: 21300000, guid: 1cd262cd4297e4c6ba0bd6d8b44a63bc, type: 3}
+  - {fileID: 21300000, guid: 49e6300004d89482d9f325d8b4ffeeae, type: 3}
+  - {fileID: 21300000, guid: fa7a817e33a944dd4807165484da8f5d, type: 3}
+  - {fileID: 21300000, guid: 434c956ad242245b38de1aefbeaf33f2, type: 3}
+  fontSource: {fileID: 539596908}
 --- !u!1 &1809357253
 GameObject:
   m_ObjectHideFlags: 0
