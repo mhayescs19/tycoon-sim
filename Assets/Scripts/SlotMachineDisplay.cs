@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class SlotMachineDisplay : MonoBehaviour
 {
+    private const int ReelCount = 3;
+
     [SerializeField] private GameObject panel;
     [SerializeField] private Sprite[] slotSprites; // Assign sprites in Inspector
     [SerializeField] private TextMeshProUGUI fontSource; // Assign the same TMP as ComputerDisplay.codeText
@@ -20,7 +22,7 @@ public class SlotMachineDisplay : MonoBehaviour
 
     private GameObject _root;
     private TextMeshProUGUI _titleText;
-    private Image[] _slotImages = new Image[3];
+    private Image[] _slotImages = new Image[ReelCount];
     private Button _spinButton;
     private TextMeshProUGUI _resultText;
 
@@ -37,6 +39,7 @@ public class SlotMachineDisplay : MonoBehaviour
 
     void Start()
     {
+        ValidateConfiguration();
         BuildUI();
         panel.SetActive(false);
     }
@@ -115,7 +118,7 @@ public class SlotMachineDisplay : MonoBehaviour
         slotRowLayout.childForceExpandHeight = false;
         slotRowLayout.childForceExpandWidth = false;
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < _slotImages.Length; i++)
         {
             _slotImages[i] = CreateSlotImage(slotRow.transform, 220f, 220f);
         }
@@ -234,8 +237,11 @@ public class SlotMachineDisplay : MonoBehaviour
         return values;
     }
 
-    private static SpinOutcome EvaluateOutcome(int[] values)
+    private SpinOutcome EvaluateOutcome(int[] values)
     {
+        if (values == null || values.Length != ReelCount)
+            return SpinOutcome.Unavailable;
+
         if (values[0] == values[1] && values[1] == values[2])
             return SpinOutcome.Jackpot;
         if (values[0] == values[1] || values[1] == values[2] || values[0] == values[2])
@@ -269,9 +275,18 @@ public class SlotMachineDisplay : MonoBehaviour
 
     private void ResetSlots()
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < _slotImages.Length; i++)
         {
             _slotImages[i].sprite = slotSprites != null && slotSprites.Length > 0 ? slotSprites[0] : null;
         }
+    }
+
+    private void ValidateConfiguration()
+    {
+        if (slotSprites == null || slotSprites.Length == 0)
+            Debug.LogWarning("[SlotMachineDisplay] No slotSprites configured.", this);
+
+        if (_slotImages.Length != ReelCount)
+            Debug.LogWarning("[SlotMachineDisplay] Unexpected slot reel count configured.", this);
     }
 }
