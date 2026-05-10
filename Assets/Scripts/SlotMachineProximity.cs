@@ -111,7 +111,7 @@ public class SlotMachineProximity : MonoBehaviour
         _promptRoot.SetActive(false);
     }
 
-    private static bool IsPlayerCollider(Collider other)
+    private bool IsPlayerCollider(Collider other)
     {
         return other.CompareTag(PlayerTag);
     }

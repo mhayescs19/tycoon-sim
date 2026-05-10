@@ -285,8 +285,5 @@ public class SlotMachineDisplay : MonoBehaviour
     {
         if (slotSprites == null || slotSprites.Length == 0)
             Debug.LogWarning("[SlotMachineDisplay] No slotSprites configured.", this);
-
-        if (_slotImages.Length != ReelCount)
-            Debug.LogWarning("[SlotMachineDisplay] Unexpected slot reel count configured.", this);
     }
 }
