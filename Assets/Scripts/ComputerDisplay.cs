@@ -39,6 +39,9 @@ public class ComputerDisplay : MonoBehaviour
     private TextMeshProUGUI _spawnInfoText;
     private Button _bugBountyBackButton;
     private TextMeshProUGUI _bugBountyCardLabel;
+    private ScrollRect _activeBountiesScroll;
+    private ScrollRect _successfulBountiesScroll;
+    private ScrollRect _failedBountiesScroll;
     private float _bugBountyCardRefreshTimer;
     private int _ignoreEscapeCloseUntilFrame = -1;
 
@@ -469,7 +472,7 @@ public class ComputerDisplay : MonoBehaviour
         rootRect.anchorMin = new Vector2(0.5f, 0.5f);
         rootRect.anchorMax = new Vector2(0.5f, 0.5f);
         rootRect.pivot = new Vector2(0.5f, 0.5f);
-        rootRect.sizeDelta = new Vector2(720f, 520f);
+        rootRect.sizeDelta = new Vector2(720f, 600f);
 
         var image = _bugBountyPanelRoot.GetComponent<Image>();
         image.color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
@@ -487,9 +490,10 @@ public class ComputerDisplay : MonoBehaviour
         _spawnInfoText = CreatePanelText(_bugBountyPanelRoot.transform, "Spawning every 15-45 seconds", 18, 26f, TextAlignmentOptions.Left);
         _spawnInfoText.color = new Color(0.75f, 0.92f, 0.75f, 1f);
 
-        _activeBountiesText = CreatePanelText(_bugBountyPanelRoot.transform, "Active", 18, 150f, TextAlignmentOptions.TopLeft);
-        _successfulBountiesText = CreatePanelText(_bugBountyPanelRoot.transform, "Successful", 18, 130f, TextAlignmentOptions.TopLeft);
-        _failedBountiesText = CreatePanelText(_bugBountyPanelRoot.transform, "Failed", 18, 130f, TextAlignmentOptions.TopLeft);
+        const float bountyCardViewportHeight = 118f;
+        _activeBountiesText = CreateBountySectionScrollCard(_bugBountyPanelRoot.transform, bountyCardViewportHeight, out _activeBountiesScroll);
+        _successfulBountiesText = CreateBountySectionScrollCard(_bugBountyPanelRoot.transform, bountyCardViewportHeight, out _successfulBountiesScroll);
+        _failedBountiesText = CreateBountySectionScrollCard(_bugBountyPanelRoot.transform, bountyCardViewportHeight, out _failedBountiesScroll);
 
         _bugBountyBackButton = CreatePopupButton(_bugBountyPanelRoot.transform, "BackToDashboardButton", "Back to Dashboard", ShowDashboard);
 
@@ -585,6 +589,149 @@ public class ComputerDisplay : MonoBehaviour
         _failedBountiesText.text = failedBuilder.ToString();
 
         _spawnInfoText.text = $"Next bounty in ~{_bugBountyManager.SpawnTimerRemaining:F0}s (interval rolls 15-45s)";
+
+        RebuildBountyScrollLayout(_activeBountiesScroll);
+        RebuildBountyScrollLayout(_successfulBountiesScroll);
+        RebuildBountyScrollLayout(_failedBountiesScroll);
+    }
+
+    private static void RebuildBountyScrollLayout(ScrollRect scroll)
+    {
+        if (scroll == null || scroll.content == null || scroll.viewport == null) return;
+
+        var content = scroll.content;
+        var tmp = content.GetComponentInChildren<TextMeshProUGUI>();
+        if (tmp == null) return;
+
+        var vlg = content.GetComponent<VerticalLayoutGroup>();
+        float padH = vlg != null ? vlg.padding.horizontal : 0f;
+        float vpW = ((RectTransform)scroll.viewport).rect.width;
+        // First layout frame viewport can be 0; use panel-ish width so wrapping height is sane.
+        float innerWidth = Mathf.Max(120f, vpW > 1f ? vpW - padH : 640f - padH);
+
+        tmp.ForceMeshUpdate(true);
+        float textHeight = tmp.GetPreferredValues(innerWidth, 0).y;
+        // Prefer rendered bounds when they exceed preferred (fixes short content + clipped last line).
+        float boundsH = tmp.textBounds.size.y;
+        if (boundsH > 0.5f)
+            textHeight = Mathf.Max(textHeight, boundsH + Mathf.Max(0f, -tmp.textBounds.min.y));
+        textHeight += 10f;
+
+        var textLe = tmp.GetComponent<LayoutElement>();
+        if (textLe != null)
+            textLe.preferredHeight = textHeight;
+
+        float top = vlg != null ? vlg.padding.top : 0f;
+        float bottom = vlg != null ? vlg.padding.bottom : 0f;
+        float contentH = top + textHeight + bottom;
+
+        var contentRt = (RectTransform)content;
+        contentRt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, contentH);
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(contentRt);
+        contentRt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, contentH);
+        scroll.verticalNormalizedPosition = 1f;
+    }
+
+    /// <summary>
+    /// Card frame + scroll viewport so long bounty lists never overlap other sections.
+    /// </summary>
+    private TextMeshProUGUI CreateBountySectionScrollCard(Transform parent, float viewportHeight, out ScrollRect scrollRectOut)
+    {
+        scrollRectOut = null;
+
+        var card = new GameObject("BountySectionCard", typeof(RectTransform), typeof(Image), typeof(LayoutElement), typeof(VerticalLayoutGroup));
+        card.transform.SetParent(parent, false);
+
+        var cardLe = card.GetComponent<LayoutElement>();
+        cardLe.preferredHeight = viewportHeight + 16f;
+
+        var cardImg = card.GetComponent<Image>();
+        cardImg.color = new Color(0.11f, 0.11f, 0.11f, 1f);
+
+        var cardLayout = card.GetComponent<VerticalLayoutGroup>();
+        cardLayout.padding = new RectOffset(10, 10, 8, 8);
+        cardLayout.childAlignment = TextAnchor.UpperLeft;
+        cardLayout.childControlHeight = true;
+        cardLayout.childControlWidth = true;
+        cardLayout.childForceExpandHeight = true;
+        cardLayout.childForceExpandWidth = true;
+
+        var scrollGo = new GameObject("Scroll", typeof(RectTransform), typeof(ScrollRect), typeof(Image));
+        scrollGo.transform.SetParent(card.transform, false);
+
+        var scrollLe = scrollGo.AddComponent<LayoutElement>();
+        scrollLe.preferredHeight = viewportHeight;
+        scrollLe.minHeight = viewportHeight;
+        scrollLe.flexibleHeight = 0f;
+
+        var scrollBg = scrollGo.GetComponent<Image>();
+        scrollBg.color = new Color(0.06f, 0.06f, 0.06f, 1f);
+        scrollBg.raycastTarget = true;
+
+        var scrollRect = scrollGo.GetComponent<ScrollRect>();
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.scrollSensitivity = 24f;
+        scrollRect.inertia = true;
+        scrollRectOut = scrollRect;
+
+        var viewportGo = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D), typeof(Image));
+        viewportGo.transform.SetParent(scrollGo.transform, false);
+        var vpImg = viewportGo.GetComponent<Image>();
+        vpImg.color = new Color(1f, 1f, 1f, 0.02f);
+        vpImg.raycastTarget = true;
+
+        var vpRt = viewportGo.GetComponent<RectTransform>();
+        vpRt.anchorMin = Vector2.zero;
+        vpRt.anchorMax = Vector2.one;
+        vpRt.sizeDelta = Vector2.zero;
+        vpRt.anchoredPosition = Vector2.zero;
+
+        var contentGo = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup));
+        contentGo.transform.SetParent(viewportGo.transform, false);
+        var contentRt = contentGo.GetComponent<RectTransform>();
+        contentRt.anchorMin = new Vector2(0f, 1f);
+        contentRt.anchorMax = new Vector2(1f, 1f);
+        contentRt.pivot = new Vector2(0.5f, 1f);
+        contentRt.anchoredPosition = Vector2.zero;
+        contentRt.sizeDelta = new Vector2(0f, 0f);
+
+        var contentVlg = contentGo.GetComponent<VerticalLayoutGroup>();
+        contentVlg.padding = new RectOffset(6, 6, 2, 10);
+        contentVlg.childAlignment = TextAnchor.UpperLeft;
+        contentVlg.childControlHeight = true;
+        contentVlg.childControlWidth = true;
+        contentVlg.childForceExpandWidth = true;
+        contentVlg.childForceExpandHeight = false;
+
+        var textGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+        textGo.transform.SetParent(contentGo.transform, false);
+        var textRt = textGo.GetComponent<RectTransform>();
+        textRt.anchorMin = new Vector2(0f, 1f);
+        textRt.anchorMax = new Vector2(1f, 1f);
+        textRt.pivot = new Vector2(0.5f, 1f);
+        textRt.sizeDelta = new Vector2(0f, 0f);
+        textRt.anchoredPosition = Vector2.zero;
+
+        var textLe = textGo.GetComponent<LayoutElement>();
+        textLe.flexibleWidth = 1f;
+        textLe.minHeight = 2f;
+
+        var tmp = textGo.GetComponent<TextMeshProUGUI>();
+        tmp.font = codeText.font;
+        tmp.fontSize = 18;
+        tmp.text = "";
+        tmp.alignment = TextAlignmentOptions.TopLeft;
+        tmp.color = Color.white;
+        tmp.enableWordWrapping = true;
+        tmp.raycastTarget = false;
+
+        scrollRect.viewport = vpRt;
+        scrollRect.content = contentRt;
+
+        return tmp;
     }
 
     private void OnBountySpawned(string message)
