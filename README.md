@@ -27,6 +27,6 @@
 | Generate the base map                     | Michael  | 4/17     | Done | Create game manager for balance and base room.                                                                             |
 | Create slot machine functionality (logic) | Matt     | 4/17     | Not Started |                                                                                                                            |
 | Create vibe coding computer (logic)       | Michael  | 4/17     | Done | Use [hackertyper.net](https://hackertyper.net/) as inspiration for code autofill and Gary Tan real-world open source code. |
-| Create assets for Gary's apartment        | Kaylee   | 4/24     | Not Started | Design Gary's computer, second monitor, and airbed hustle.                                                                 |
+| Create assets for Gary's apartment        | Kaylee   | 4/24     | Started | Design Gary's computer, second monitor, and airbed hustle.                                                                 |
 
 
