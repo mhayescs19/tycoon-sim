@@ -202,8 +202,8 @@ public class SlotMachineDisplay : MonoBehaviour
         }
 
         // Payouts
-        float jackpotAmount = 100f;
-        float twoMatchAmount = 12f;
+        float jackpotAmount = 110f;
+        float twoMatchAmount = 20f;
 
         if (values[0] == values[1] && values[1] == values[2])
         {

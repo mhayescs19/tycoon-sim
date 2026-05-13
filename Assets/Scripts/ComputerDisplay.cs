@@ -682,14 +682,14 @@ public class ComputerDisplay : MonoBehaviour
         rootRect.anchorMin = new Vector2(0.5f, 0.5f);
         rootRect.anchorMax = new Vector2(0.5f, 0.5f);
         rootRect.pivot     = new Vector2(0.5f, 0.5f);
-        rootRect.sizeDelta = new Vector2(560f, 380f);
+        rootRect.sizeDelta = new Vector2(560f, 360f);
 
         var image = _airbedPanelRoot.GetComponent<Image>();
         image.color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
 
         var layout = _airbedPanelRoot.GetComponent<VerticalLayoutGroup>();
         layout.padding            = new RectOffset(24, 24, 24, 24);
-        layout.spacing            = 14f;
+        layout.spacing            = 6f;
         layout.childAlignment     = TextAnchor.UpperLeft;
         layout.childControlHeight = false;
         layout.childControlWidth  = true;
@@ -699,7 +699,7 @@ public class ComputerDisplay : MonoBehaviour
         title.color = Color.white;
 
         // Status block (units, rate, next cost)
-        _airbedStatusText = CreatePanelText(_airbedPanelRoot.transform, "", 19, 180f, TextAlignmentOptions.TopLeft);
+        _airbedStatusText = CreatePanelText(_airbedPanelRoot.transform, "", 19, 60f, TextAlignmentOptions.TopLeft);
         _airbedStatusText.color = new Color(0.88f, 0.95f, 0.88f, 1f);
 
         // Buy button
@@ -745,21 +745,9 @@ public class ComputerDisplay : MonoBehaviour
 
         sb.AppendLine($"Units rented:   {mgr.UnitsOwned} / {AirbedManager.MaxUnits}");
         sb.AppendLine($"Passive income: ${mgr.DollarPerSec:F2} / sec");
-        sb.AppendLine();
 
         if (mgr.IsMaxed)
-        {
             sb.AppendLine("All units rented out — fully booked!");
-        }
-        else
-        {
-            sb.AppendLine($"Next unit cost: ${mgr.NextUnitCost}");
-            sb.AppendLine();
-            sb.AppendLine("Income per unit:");
-            sb.AppendLine("  Unit 1 — $0.50/sec   (cost $100)");
-            sb.AppendLine("  Unit 2 — $0.35/sec   (cost $250)");
-            sb.AppendLine("  Unit 3 — $0.20/sec   (cost $500)");
-        }
 
         _airbedStatusText.text = sb.ToString();
 
