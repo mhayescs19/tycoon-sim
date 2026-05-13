@@ -37,13 +37,13 @@ public class TypingInput : MonoBehaviour
             IsActive = false;
             computerDisplay.ShowDashboard();
             comboMultiplier.Reset();
-            GameManager.Instance.SetLOCPerSec(0f);
+            GameManager.Instance.SetTypingLOCPerSec(0f);
         }
     }
 
     private void OnTextInput(char c)
     {
-        Debug.Log($"[TypingInput] Key pressed: '{c}' IsActive={IsActive}");
+        // Debug.Log($"[TypingInput] Key pressed: '{c}' IsActive={IsActive}");
         if (!IsActive) return;
         int loc = computerDisplay.TypeCharacters(charsPerKeypress);
         if (loc > 0) GameManager.Instance.AddLOC(loc);

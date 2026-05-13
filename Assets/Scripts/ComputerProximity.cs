@@ -65,7 +65,7 @@ public class ComputerProximity : MonoBehaviour
         typingInput.IsActive = false;
         computerDisplay.Deactivate();
         comboMultiplier.Reset();
-        GameManager.Instance.SetLOCPerSec(0f);
+        GameManager.Instance.SetTypingLOCPerSec(0f);
     }
 
     private void CreatePromptUi()

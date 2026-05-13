@@ -42,6 +42,6 @@ public class ComboMultiplier : MonoBehaviour
 
     private void Push()
     {
-        GameManager.Instance.SetLOCPerSec(Current);
+        GameManager.Instance.SetTypingLOCPerSec(Current);
     }
 }
