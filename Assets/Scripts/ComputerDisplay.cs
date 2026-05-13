@@ -45,6 +45,12 @@ public class ComputerDisplay : MonoBehaviour
     private float _bugBountyCardRefreshTimer;
     private int _ignoreEscapeCloseUntilFrame = -1;
 
+    private GameObject _airbedPanelRoot;
+    private TextMeshProUGUI _airbedStatusText;
+    private Button _airbedBuyButton;
+    private TextMeshProUGUI _airbedBuyButtonLabel;
+    private TextMeshProUGUI _airbedCardLabel;
+
     void Awake()
     {
         TextAsset asset = Resources.Load<TextAsset>("GStackSourceCode");
@@ -71,14 +77,30 @@ public class ComputerDisplay : MonoBehaviour
         _bugBountyManager.OnBountyDataChanged += RefreshBugBountyPanel;
         _bugBountyManager.OnBountySpawned += OnBountySpawned;
 
+        if (AirbedManager.Instance == null)
+        {
+            var airbedObj = new GameObject("AirbedManager");
+            airbedObj.AddComponent<AirbedManager>();
+            airbedObj.AddComponent<AirbedDisplay>();
+        }
+        AirbedManager.Instance.OnStateChanged += RefreshAirbedPanel;
+        AirbedManager.Instance.OnStateChanged += RefreshAirbedCardSubtitle;
+
         panel.SetActive(false);
     }
 
     void OnDestroy()
     {
-        if (_bugBountyManager == null) return;
-        _bugBountyManager.OnBountyDataChanged -= RefreshBugBountyPanel;
-        _bugBountyManager.OnBountySpawned -= OnBountySpawned;
+        if (_bugBountyManager != null)
+        {
+            _bugBountyManager.OnBountyDataChanged -= RefreshBugBountyPanel;
+            _bugBountyManager.OnBountySpawned -= OnBountySpawned;
+        }
+        if (AirbedManager.Instance != null)
+        {
+            AirbedManager.Instance.OnStateChanged -= RefreshAirbedPanel;
+            AirbedManager.Instance.OnStateChanged -= RefreshAirbedCardSubtitle;
+        }
     }
 
     void Update()
@@ -98,6 +120,7 @@ public class ComputerDisplay : MonoBehaviour
         if (Time.frameCount <= _ignoreEscapeCloseUntilFrame) return;
         if (_dashboardRoot == null || !_dashboardRoot.activeSelf) return;
         if (_bugBountyPanelRoot != null && _bugBountyPanelRoot.activeSelf) return;
+        if (_airbedPanelRoot != null && _airbedPanelRoot.activeSelf) return;
         if (_purchasePopupRoot != null && _purchasePopupRoot.activeSelf) return;
         if (_isTypingMode) return;
 
@@ -154,6 +177,7 @@ public class ComputerDisplay : MonoBehaviour
         _isTypingMode = false;
         _dashboardRoot.SetActive(true);
         if (_bugBountyPanelRoot != null) _bugBountyPanelRoot.SetActive(false);
+        if (_airbedPanelRoot != null) _airbedPanelRoot.SetActive(false);
         scrollRect.gameObject.SetActive(false);
         // TypingInput also uses Esc to return here; ignore close-on-Esc for this frame.
         _ignoreEscapeCloseUntilFrame = Time.frameCount + 1;
@@ -223,10 +247,11 @@ public class ComputerDisplay : MonoBehaviour
         CreateCard("Vibe Code", "Launch coding interface", false, EnterVibeCodeMode);
         CreateCard("Bug Bounty", "View active, successful, and failed bounties", false, ShowBugBountyPanel);
         CreateCard("OpenClaw", "Purchase Hustle - $200", true, () => ShowPurchasePopup("OpenClaw", 200));
-        CreateCard("Airbed", "Purchase Hustle - $100", true, () => ShowPurchasePopup("Airbed", 100));
+        CreateCard("Airbed", "Sublet floor space for passive income", false, ShowAirbedPanel);
         ConfigureNavigation();
         CreatePurchasePopup();
         CreateBugBountyPanel();
+        CreateAirbedPanel();
 
         scrollRect.gameObject.SetActive(false);
         _dashboardBuilt = true;
@@ -295,6 +320,12 @@ public class ComputerDisplay : MonoBehaviour
         {
             _bugBountyCardLabel = label;
             RefreshBugBountyCardSubtitle();
+        }
+
+        if (title == "Airbed")
+        {
+            _airbedCardLabel = label;
+            RefreshAirbedCardSubtitle();
         }
 
         _cardButtons.Add(button);
@@ -772,5 +803,117 @@ public class ComputerDisplay : MonoBehaviour
     {
         if (typingInput != null)
             typingInput.IsActive = enabled;
+    }
+
+    private void ShowAirbedPanel()
+    {
+        _dashboardRoot.SetActive(false);
+        scrollRect.gameObject.SetActive(false);
+        if (_purchasePopupRoot != null) _purchasePopupRoot.SetActive(false);
+        _airbedPanelRoot.SetActive(true);
+        RefreshAirbedPanel();
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(_airbedBuyButton.gameObject);
+    }
+
+    private void CreateAirbedPanel()
+    {
+        _airbedPanelRoot = new GameObject("AirbedPanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+        _airbedPanelRoot.transform.SetParent(panel.transform, false);
+
+        var rootRect = (RectTransform)_airbedPanelRoot.transform;
+        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rootRect.pivot     = new Vector2(0.5f, 0.5f);
+        rootRect.sizeDelta = new Vector2(560f, 360f);
+
+        var image = _airbedPanelRoot.GetComponent<Image>();
+        image.color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
+
+        var layout = _airbedPanelRoot.GetComponent<VerticalLayoutGroup>();
+        layout.padding            = new RectOffset(24, 24, 24, 24);
+        layout.spacing            = 6f;
+        layout.childAlignment     = TextAnchor.UpperLeft;
+        layout.childControlHeight = false;
+        layout.childControlWidth  = true;
+
+        var title = CreatePanelText(_airbedPanelRoot.transform, "Airbed Rentals", 30, 42f, TextAlignmentOptions.Left);
+        title.color = Color.white;
+
+        _airbedStatusText = CreatePanelText(_airbedPanelRoot.transform, "", 19, 60f, TextAlignmentOptions.TopLeft);
+        _airbedStatusText.color = new Color(0.88f, 0.95f, 0.88f, 1f);
+
+        _airbedBuyButton = CreatePopupButton(_airbedPanelRoot.transform, "AirbedBuyButton", "Buy Unit", OnAirbedBuyPressed);
+
+        var backButton = CreatePopupButton(_airbedPanelRoot.transform, "AirbedBackButton", "Back to Dashboard", ShowDashboard);
+
+        _airbedBuyButtonLabel = _airbedBuyButton.GetComponentInChildren<TextMeshProUGUI>();
+
+        Navigation buyNav  = new Navigation { mode = Navigation.Mode.Explicit,
+            selectOnUp = backButton, selectOnDown = backButton };
+        Navigation backNav = new Navigation { mode = Navigation.Mode.Explicit,
+            selectOnUp = _airbedBuyButton, selectOnDown = _airbedBuyButton };
+        _airbedBuyButton.navigation = buyNav;
+        backButton.navigation       = backNav;
+
+        _airbedPanelRoot.SetActive(false);
+        RefreshAirbedPanel();
+    }
+
+    private void OnAirbedBuyPressed()
+    {
+        if (AirbedManager.Instance == null) return;
+        bool bought = AirbedManager.Instance.TryPurchaseUnit();
+        if (!bought)
+        {
+            if (_airbedStatusText != null)
+                StartCoroutine(FlashText(_airbedStatusText,
+                    AirbedManager.Instance.IsMaxed ? "Already at max capacity!" : "Not enough funds!"));
+        }
+    }
+
+    private void RefreshAirbedPanel()
+    {
+        if (_airbedPanelRoot == null || AirbedManager.Instance == null) return;
+
+        var mgr = AirbedManager.Instance;
+        var sb  = new System.Text.StringBuilder();
+
+        sb.AppendLine($"Units rented:   {mgr.UnitsOwned} / {AirbedManager.MaxUnits}");
+        sb.AppendLine($"Passive income: ${mgr.DollarPerSec:F2} / sec");
+
+        if (mgr.IsMaxed)
+            sb.AppendLine("All units rented out — fully booked!");
+
+        _airbedStatusText.text = sb.ToString();
+
+        if (_airbedBuyButtonLabel != null)
+        {
+            _airbedBuyButtonLabel.text = mgr.IsMaxed
+                ? "Fully Booked"
+                : $"Rent Unit {mgr.UnitsOwned + 1}  (${mgr.NextUnitCost})";
+        }
+
+        if (_airbedBuyButton != null)
+            _airbedBuyButton.interactable = !mgr.IsMaxed;
+    }
+
+    private void RefreshAirbedCardSubtitle()
+    {
+        if (_airbedCardLabel == null || AirbedManager.Instance == null) return;
+        var mgr = AirbedManager.Instance;
+        string sub = mgr.UnitsOwned == 0
+            ? $"Sublet floor space · first unit ${mgr.NextUnitCost}"
+            : $"Units: {mgr.UnitsOwned}/{AirbedManager.MaxUnits} · ${mgr.DollarPerSec:F2}/sec";
+        _airbedCardLabel.text = $"Airbed\n<size=65%>{sub}</size>";
+    }
+
+    private System.Collections.IEnumerator FlashText(TextMeshProUGUI label, string message)
+    {
+        string original = label.text;
+        label.text  = $"<color=#FF6B6B>{message}</color>";
+        yield return new WaitForSeconds(1.8f);
+        if (label != null) label.text = original;
+        RefreshAirbedPanel();
     }
 }
