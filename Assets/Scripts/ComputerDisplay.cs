@@ -42,7 +42,6 @@ public class ComputerDisplay : MonoBehaviour
     private float _bugBountyCardRefreshTimer;
     private int _ignoreEscapeCloseUntilFrame = -1;
 
-    // ── Airbed panel ──────────────────────────────────────────────────────────
     private GameObject _airbedPanelRoot;
     private TextMeshProUGUI _airbedStatusText;
     private Button _airbedBuyButton;
@@ -75,7 +74,6 @@ public class ComputerDisplay : MonoBehaviour
         _bugBountyManager.OnBountyDataChanged += RefreshBugBountyPanel;
         _bugBountyManager.OnBountySpawned += OnBountySpawned;
 
-        // Ensure AirbedManager singleton exists
         if (AirbedManager.Instance == null)
         {
             var airbedObj = new GameObject("AirbedManager");
@@ -660,8 +658,6 @@ public class ComputerDisplay : MonoBehaviour
             typingInput.IsActive = enabled;
     }
 
-    // ── Airbed Panel ──────────────────────────────────────────────────────────
-
     private void ShowAirbedPanel()
     {
         _dashboardRoot.SetActive(false);
@@ -694,24 +690,18 @@ public class ComputerDisplay : MonoBehaviour
         layout.childControlHeight = false;
         layout.childControlWidth  = true;
 
-        // Title
         var title = CreatePanelText(_airbedPanelRoot.transform, "Airbed Rentals", 30, 42f, TextAlignmentOptions.Left);
         title.color = Color.white;
 
-        // Status block (units, rate, next cost)
         _airbedStatusText = CreatePanelText(_airbedPanelRoot.transform, "", 19, 60f, TextAlignmentOptions.TopLeft);
         _airbedStatusText.color = new Color(0.88f, 0.95f, 0.88f, 1f);
 
-        // Buy button
         _airbedBuyButton = CreatePopupButton(_airbedPanelRoot.transform, "AirbedBuyButton", "Buy Unit", OnAirbedBuyPressed);
 
-        // Back button
         var backButton = CreatePopupButton(_airbedPanelRoot.transform, "AirbedBackButton", "Back to Dashboard", ShowDashboard);
 
-        // Grab the buy button label so we can update its text
         _airbedBuyButtonLabel = _airbedBuyButton.GetComponentInChildren<TextMeshProUGUI>();
 
-        // Navigation
         Navigation buyNav  = new Navigation { mode = Navigation.Mode.Explicit,
             selectOnUp = backButton, selectOnDown = backButton };
         Navigation backNav = new Navigation { mode = Navigation.Mode.Explicit,
@@ -729,7 +719,6 @@ public class ComputerDisplay : MonoBehaviour
         bool bought = AirbedManager.Instance.TryPurchaseUnit();
         if (!bought)
         {
-            // Flash status — not enough funds or maxed
             if (_airbedStatusText != null)
                 StartCoroutine(FlashText(_airbedStatusText,
                     AirbedManager.Instance.IsMaxed ? "Already at max capacity!" : "Not enough funds!"));
