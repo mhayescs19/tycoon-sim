@@ -45,6 +45,10 @@ public class ComputerDisplay : MonoBehaviour
     private float _bugBountyCardRefreshTimer;
     private int _ignoreEscapeCloseUntilFrame = -1;
 
+    private OpenclawManager _openclawManager;
+    private GameObject _openclawPanelRoot;
+    private TextMeshProUGUI _openclawStatusText;
+
     private GameObject _airbedPanelRoot;
     private TextMeshProUGUI _airbedStatusText;
     private Button _airbedBuyButton;
@@ -74,8 +78,16 @@ public class ComputerDisplay : MonoBehaviour
             _bugBountyManager = managerObj.AddComponent<BugBountyManager>();
         }
 
+        _openclawManager = FindFirstObjectByType<OpenclawManager>();
+        if (_openclawManager == null)
+        {
+            Debug.LogError("FATAL: OpenclawManager not found in scene. Please add it to a persistent GameObject.");
+        }
+
         _bugBountyManager.OnBountyDataChanged += RefreshBugBountyPanel;
         _bugBountyManager.OnBountySpawned += OnBountySpawned;
+
+        _openclawManager.OnStateChanged += RefreshOpenClawPanel;
 
         if (AirbedManager.Instance == null)
         {
@@ -95,6 +107,10 @@ public class ComputerDisplay : MonoBehaviour
         {
             _bugBountyManager.OnBountyDataChanged -= RefreshBugBountyPanel;
             _bugBountyManager.OnBountySpawned -= OnBountySpawned;
+        }
+        if (_openclawManager != null)
+        {
+            _openclawManager.OnStateChanged -= RefreshOpenClawPanel;
         }
         if (AirbedManager.Instance != null)
         {
@@ -118,13 +134,20 @@ public class ComputerDisplay : MonoBehaviour
         if (Keyboard.current == null || !panel.activeSelf) return;
         if (!Keyboard.current.escapeKey.wasPressedThisFrame) return;
         if (Time.frameCount <= _ignoreEscapeCloseUntilFrame) return;
-        if (_dashboardRoot == null || !_dashboardRoot.activeSelf) return;
-        if (_bugBountyPanelRoot != null && _bugBountyPanelRoot.activeSelf) return;
-        if (_airbedPanelRoot != null && _airbedPanelRoot.activeSelf) return;
-        if (_purchasePopupRoot != null && _purchasePopupRoot.activeSelf) return;
-        if (_isTypingMode) return;
 
-        Deactivate();
+        bool popupActive = _purchasePopupRoot != null && _purchasePopupRoot.activeSelf;
+        bool bugBountyActive = _bugBountyPanelRoot != null && _bugBountyPanelRoot.activeSelf;
+        bool airbedActive = _airbedPanelRoot != null && _airbedPanelRoot.activeSelf;
+        bool openclawActive = _openclawPanelRoot != null && _openclawPanelRoot.activeSelf;
+
+        if (popupActive || bugBountyActive || airbedActive || openclawActive || _isTypingMode)
+        {
+            ShowDashboard();
+        }
+        else if (_dashboardRoot != null && _dashboardRoot.activeSelf)
+        {
+            Deactivate();
+        }
     }
 
     public int TypeCharacters(int count)
@@ -178,6 +201,8 @@ public class ComputerDisplay : MonoBehaviour
         _dashboardRoot.SetActive(true);
         if (_bugBountyPanelRoot != null) _bugBountyPanelRoot.SetActive(false);
         if (_airbedPanelRoot != null) _airbedPanelRoot.SetActive(false);
+        if (_openclawPanelRoot != null) _openclawPanelRoot.SetActive(false);
+        if (_purchasePopupRoot != null) _purchasePopupRoot.SetActive(false);
         scrollRect.gameObject.SetActive(false);
         // TypingInput also uses Esc to return here; ignore close-on-Esc for this frame.
         _ignoreEscapeCloseUntilFrame = Time.frameCount + 1;
@@ -246,12 +271,13 @@ public class ComputerDisplay : MonoBehaviour
         CreateTitle();
         CreateCard("Vibe Code", "Launch coding interface", false, EnterVibeCodeMode);
         CreateCard("Bug Bounty", "View active, successful, and failed bounties", false, ShowBugBountyPanel);
-        CreateCard("OpenClaw", "Purchase Hustle - $200", true, () => ShowPurchasePopup("OpenClaw", 200));
+        CreateCard("OpenClaw", "Purchase Agents", false, ShowOpenClawPanel);
         CreateCard("Airbed", "Sublet floor space for passive income", false, ShowAirbedPanel);
         ConfigureNavigation();
         CreatePurchasePopup();
         CreateBugBountyPanel();
         CreateAirbedPanel();
+        CreateOpenClawPanel();
 
         scrollRect.gameObject.SetActive(false);
         _dashboardBuilt = true;
@@ -436,7 +462,7 @@ public class ComputerDisplay : MonoBehaviour
         var colors = button.colors;
         colors.normalColor = image.color;
         colors.highlightedColor = new Color(0.31f, 0.42f, 0.61f, 1f);
-        colors.selectedColor = new Color(0.48f, 0.42f, 0.18f, 1f);
+        colors.selectedColor = image.color; // Removes the sticky green highlight
         colors.pressedColor = new Color(0.18f, 0.24f, 0.35f, 1f);
         button.colors = colors;
 
@@ -803,6 +829,188 @@ public class ComputerDisplay : MonoBehaviour
     {
         if (typingInput != null)
             typingInput.IsActive = enabled;
+    }
+
+    private void CreateOpenClawPanel()
+    {
+        _openclawPanelRoot = new GameObject("OpenclawBountyPanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+        _openclawPanelRoot.transform.SetParent(panel.transform, false);
+
+        var rootRect = (RectTransform)_openclawPanelRoot.transform;
+        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
+        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
+        rootRect.pivot = new Vector2(0.5f, 0.5f);
+        rootRect.sizeDelta = new Vector2(860f, 660f);
+
+        var rootImage = _openclawPanelRoot.GetComponent<Image>();
+        rootImage.color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
+
+        var rootLayout = _openclawPanelRoot.GetComponent<VerticalLayoutGroup>();
+        rootLayout.padding = new RectOffset(24, 24, 24, 24);
+        rootLayout.spacing = 10f;
+        rootLayout.childControlWidth = true;
+        rootLayout.childControlHeight = false;
+        rootLayout.childAlignment = TextAnchor.UpperLeft;
+
+        var title = CreatePanelText(_openclawPanelRoot.transform, "Openclaw Agents", 30, 42f, TextAlignmentOptions.Left);
+        title.color = Color.white;
+
+        _openclawStatusText = CreatePanelText(_openclawPanelRoot.transform, "", 19, 56f, TextAlignmentOptions.TopLeft);
+        _openclawStatusText.color = new Color(0.88f, 0.95f, 0.88f, 1f);
+
+        var gridRoot = new GameObject("OpenClawGrid", typeof(RectTransform), typeof(GridLayoutGroup), typeof(LayoutElement));
+        gridRoot.transform.SetParent(_openclawPanelRoot.transform, false);
+        var gridRect = (RectTransform)gridRoot.transform;
+        gridRect.anchorMin = new Vector2(0.5f, 0.5f);
+        gridRect.anchorMax = new Vector2(0.5f, 0.5f);
+        gridRect.pivot = new Vector2(0.5f, 0.5f);
+
+        var grid = gridRoot.GetComponent<GridLayoutGroup>();
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 2;
+        grid.cellSize = new Vector2(340f, 200f);
+        grid.spacing = new Vector2(12f, 12f);
+        grid.childAlignment = TextAnchor.MiddleCenter;
+
+        var gridLe = gridRoot.GetComponent<LayoutElement>();
+        gridLe.preferredHeight = (grid.cellSize.y * 2f) + grid.spacing.y;
+        gridLe.preferredWidth = (grid.cellSize.x * 2f) + grid.spacing.x;
+        gridRect.sizeDelta = new Vector2(gridLe.preferredWidth, gridLe.preferredHeight);
+
+        for (int i = 0; i < 4; i++)
+        {
+            var agentPanel = new GameObject($"AgentPanel{i+1}", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+            agentPanel.transform.SetParent(gridRoot.transform, false);
+
+            var agentImg = agentPanel.GetComponent<Image>();
+            agentImg.color = new Color(0.13f, 0.13f, 0.13f, 1f);
+
+            var agentLayout = agentPanel.GetComponent<VerticalLayoutGroup>();
+            agentLayout.padding = new RectOffset(8, 8, 6, 6);
+            agentLayout.spacing = 3f;
+            agentLayout.childAlignment = TextAnchor.UpperLeft;
+            agentLayout.childControlWidth = true;
+            agentLayout.childControlHeight = true;
+            agentLayout.childForceExpandWidth = true;
+            agentLayout.childForceExpandHeight = false;
+
+            string agentName = $"OpenClaw Agent {i + 1}";
+            int localAgentIdx = i;
+            var agentButton = CreatePopupButton(agentPanel.transform, $"Agent{i+1}BuyButton",
+                $"Buy {agentName}",
+                () => { _openclawManager.TryPurchaseAgent(localAgentIdx); });
+            var agentLe = agentButton.GetComponent<LayoutElement>();
+            if (agentLe != null) agentLe.preferredHeight = 44f;
+            var agentLabel = agentButton.GetComponentInChildren<TextMeshProUGUI>();
+            if (agentLabel != null) agentLabel.fontSize = 14;
+
+            for (int skillIdx = 0; skillIdx < 4; skillIdx++)
+            {
+                int localSkillIdx = skillIdx;
+                var skillButton = CreatePopupButton(agentPanel.transform, $"Agent{i+1}Skill{skillIdx+1}Button",
+                    $"Skill {skillIdx + 1}",
+                    () => { _openclawManager.TryPurchaseSkill(localAgentIdx, localSkillIdx); });
+                var skillLe = skillButton.GetComponent<LayoutElement>();
+                if (skillLe != null) skillLe.preferredHeight = 30f;
+                var skillLabel = skillButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (skillLabel != null) skillLabel.fontSize = 11;
+            }
+        }
+
+        var backButton = CreatePopupButton(_openclawPanelRoot.transform, "OpenClawBackButton", "Back to Dashboard", ShowDashboard);
+        var backLe = backButton.GetComponent<LayoutElement>();
+        if (backLe != null)
+        {
+            backLe.preferredHeight = 40f;
+        }
+        var backLabel = backButton.GetComponentInChildren<TextMeshProUGUI>();
+        if (backLabel != null) backLabel.fontSize = 18;
+
+        _openclawPanelRoot.SetActive(false);
+
+    }
+
+    private void ShowOpenClawPanel()
+    {
+        _dashboardRoot.SetActive(false);
+        scrollRect.gameObject.SetActive(false);
+        if (_purchasePopupRoot != null) _purchasePopupRoot.SetActive(false);
+        if (_bugBountyPanelRoot != null) _bugBountyPanelRoot.SetActive(false);
+        if (_airbedPanelRoot != null) _airbedPanelRoot.SetActive(false);
+        _openclawPanelRoot.SetActive(true);
+        RefreshOpenClawPanel();
+        if (EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
+    private void RefreshOpenClawPanel()
+    {
+        if (_openclawPanelRoot == null || _openclawManager == null) return;
+        
+        int activeAgents = 0;
+        int activeSkills = 0;
+
+        // OpenClawGrid is the third child now
+        var gridRoot = _openclawPanelRoot.transform.Find("OpenClawGrid");
+        if (gridRoot == null) return;
+
+        for (int i = 0; i < 4; i++)
+        {
+            var agentPanel = gridRoot.Find($"AgentPanel{i+1}");
+            if (agentPanel == null) continue;
+
+            var agentButton = agentPanel.Find($"Agent{i+1}BuyButton")?.GetComponent<Button>();
+            var agentLabel = agentButton?.GetComponentInChildren<TextMeshProUGUI>();
+            
+            bool agentPurchased = _openclawManager.Agents[i].IsPurchased;
+            if (agentPurchased) activeAgents++;
+
+            int agentCost = _openclawManager.GetAgentCost(i);
+
+            if (agentLabel != null)
+            {
+                agentLabel.text = agentPurchased ? $"Agent {i + 1} (Owned)" : $"Buy Agent {i + 1} (${agentCost})";
+            }
+            if (agentButton != null)
+            {
+                agentButton.interactable = !agentPurchased;
+            }
+
+            for (int skillIdx = 0; skillIdx < 4; skillIdx++)
+            {
+                var skillButton = agentPanel.Find($"Agent{i+1}Skill{skillIdx+1}Button")?.GetComponent<Button>();
+                var skillLabel = skillButton?.GetComponentInChildren<TextMeshProUGUI>();
+                
+                bool skillPurchased = _openclawManager.Agents[i].SkillsPurchased[skillIdx];
+                if (skillPurchased) activeSkills++;
+
+                int skillCost = _openclawManager.GetSkillCost(i, skillIdx);
+
+                if (skillLabel != null)
+                {
+                    if (!agentPurchased)
+                    {
+                        skillLabel.text = $"Skill {skillIdx + 1} (Locked)";
+                    }
+                    else
+                    {
+                        skillLabel.text = skillPurchased ? $"Skill {skillIdx + 1} (Owned)" : $"Buy Skill {skillIdx + 1} (${skillCost})";
+                    }
+                }
+                
+                if (skillButton != null)
+                {
+                    skillButton.interactable = agentPurchased && !skillPurchased;
+                }
+            }
+        }
+
+        if (_openclawStatusText != null)
+        {
+            _openclawStatusText.text = $"Active Agents: {activeAgents} / 4\nActive Skills: {activeSkills} / 16";
+        }
     }
 
     private void ShowAirbedPanel()
