@@ -13,6 +13,10 @@ public class OpenclawManager : MonoBehaviour
 {
     public static OpenclawManager Instance { get; private set; }
 
+    [SerializeField] private AudioClip level1PurchaseClip;
+    [SerializeField] private AudioClip level2PurchaseClip;
+    [SerializeField] private AudioClip level3PurchaseClip;
+
     public bool DeskActive = false;
     
     public OpenclawAgent[] Agents { get; private set; }
@@ -26,6 +30,7 @@ public class OpenclawManager : MonoBehaviour
 
     private GameObject deskObject;
     private GameObject[] computerObjects = new GameObject[4];
+    private AudioSource _purchaseAudioSource;
 
     public event Action OnStateChanged;
 
@@ -40,6 +45,7 @@ public class OpenclawManager : MonoBehaviour
         }
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        EnsurePurchaseAudioSource();
 
         Agents = new OpenclawAgent[4];
         for (int i = 0; i < 4; i++)
@@ -118,6 +124,7 @@ public class OpenclawManager : MonoBehaviour
         Agents[agentIndex].PassiveLOC = 2;
 
         AgentsPurchased += 1;
+        PlayAgentPurchaseClip(agentIndex);
         RecalcRate();
         OnStateChanged?.Invoke();
         return true;
@@ -168,5 +175,33 @@ public class OpenclawManager : MonoBehaviour
         LOCPerSec = total;
 
         GameManager.Instance.SetPassiveLOCPerSec(LOCPerSec);
+    }
+
+    private void EnsurePurchaseAudioSource()
+    {
+        if (_purchaseAudioSource != null) return;
+
+        _purchaseAudioSource = GetComponent<AudioSource>();
+        if (_purchaseAudioSource == null)
+            _purchaseAudioSource = gameObject.AddComponent<AudioSource>();
+
+        _purchaseAudioSource.playOnAwake = false;
+        _purchaseAudioSource.loop = false;
+    }
+
+    private void PlayAgentPurchaseClip(int agentIndex)
+    {
+        AudioClip clip = agentIndex switch
+        {
+            0 => level1PurchaseClip,
+            1 => level2PurchaseClip,
+            2 => level3PurchaseClip,
+            _ => null
+        };
+
+        if (clip == null) return;
+
+        EnsurePurchaseAudioSource();
+        _purchaseAudioSource.PlayOneShot(clip);
     }
 }

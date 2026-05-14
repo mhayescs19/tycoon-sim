@@ -13,6 +13,7 @@ public class ComputerDisplay : MonoBehaviour
     [SerializeField] private TextMeshProUGUI codeText;
     [SerializeField] private ScrollRect scrollRect;
     [SerializeField] private TypingInput typingInput;
+    [SerializeField] private AudioClip karpathyPodcast;
 
     private string _corpus;
     private int _charIndex;
@@ -20,6 +21,8 @@ public class ComputerDisplay : MonoBehaviour
     private int _lineNumber = 1;
     private bool _isTypingMode;
     private bool _dashboardBuilt;
+    private AudioSource _vibePodcastSource;
+    private float _vibePodcastTimestamp;
 
     private GameObject _dashboardRoot;
     private readonly List<Button> _cardButtons = new List<Button>();
@@ -71,6 +74,8 @@ public class ComputerDisplay : MonoBehaviour
         if (typingInput == null)
             typingInput = FindFirstObjectByType<TypingInput>();
 
+        EnsureVibePodcastSource();
+
         _bugBountyManager = FindFirstObjectByType<BugBountyManager>();
         if (_bugBountyManager == null)
         {
@@ -103,6 +108,8 @@ public class ComputerDisplay : MonoBehaviour
 
     void OnDestroy()
     {
+        PauseVibePodcast();
+
         if (_bugBountyManager != null)
         {
             _bugBountyManager.OnBountyDataChanged -= RefreshBugBountyPanel;
@@ -176,6 +183,7 @@ public class ComputerDisplay : MonoBehaviour
     public void Activate()
     {
         EnsureDashboardBuilt();
+        PauseVibePodcast();
         SetTypingEnabled(false);
         _isTypingMode = false;
         _dashboardRoot.SetActive(true);
@@ -187,6 +195,7 @@ public class ComputerDisplay : MonoBehaviour
 
     public void Deactivate()
     {
+        PauseVibePodcast();
         SetTypingEnabled(false);
         _isTypingMode = false;
         panel.SetActive(false);
@@ -196,6 +205,7 @@ public class ComputerDisplay : MonoBehaviour
     {
         if (!panel.activeSelf) return;
         EnsureDashboardBuilt();
+        PauseVibePodcast();
         SetTypingEnabled(false);
         _isTypingMode = false;
         _dashboardRoot.SetActive(true);
@@ -230,7 +240,39 @@ public class ComputerDisplay : MonoBehaviour
         if (_bugBountyPanelRoot != null) _bugBountyPanelRoot.SetActive(false);
         scrollRect.gameObject.SetActive(true);
         SetTypingEnabled(true);
+        PlayVibePodcast();
         StartCoroutine(ScrollToTop());
+    }
+
+    private void EnsureVibePodcastSource()
+    {
+        if (_vibePodcastSource != null) return;
+
+        _vibePodcastSource = gameObject.AddComponent<AudioSource>();
+        _vibePodcastSource.playOnAwake = false;
+        _vibePodcastSource.loop = false;
+    }
+
+    private void PlayVibePodcast()
+    {
+        if (karpathyPodcast == null) return;
+
+        EnsureVibePodcastSource();
+        _vibePodcastSource.clip = karpathyPodcast;
+
+        if (_vibePodcastTimestamp >= karpathyPodcast.length - 0.05f)
+            _vibePodcastTimestamp = 0f;
+
+        _vibePodcastSource.time = Mathf.Clamp(_vibePodcastTimestamp, 0f, Mathf.Max(0f, karpathyPodcast.length - 0.01f));
+        _vibePodcastSource.Play();
+    }
+
+    private void PauseVibePodcast()
+    {
+        if (_vibePodcastSource == null || !_vibePodcastSource.isPlaying) return;
+
+        _vibePodcastTimestamp = _vibePodcastSource.time;
+        _vibePodcastSource.Pause();
     }
 
     private void OnPlaceholderCardPressed(string name)
