@@ -840,7 +840,7 @@ public class ComputerDisplay : MonoBehaviour
         rootRect.anchorMin = new Vector2(0.5f, 0.5f);
         rootRect.anchorMax = new Vector2(0.5f, 0.5f);
         rootRect.pivot = new Vector2(0.5f, 0.5f);
-        rootRect.sizeDelta = new Vector2(800f, 600f);
+        rootRect.sizeDelta = new Vector2(860f, 660f);
 
         var rootImage = _openclawPanelRoot.GetComponent<Image>();
         rootImage.color = new Color(0.08f, 0.08f, 0.08f, 0.95f);
