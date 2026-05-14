@@ -1,3 +1,4 @@
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -9,17 +10,23 @@ public class SlotMachineDisplay : MonoBehaviour
     [SerializeField] private GameObject panel;
     [SerializeField] private Sprite[] slotSprites; // Assign 5 sprites in Inspector
     [SerializeField] private TextMeshProUGUI fontSource; // Assign the same TMP as ComputerDisplay.codeText
+    [SerializeField] private AudioClip slotSound;
+    [SerializeField] private float slotStartTime = 2f;
+    [SerializeField] private float slotStopTime = 6f;
 
     private GameObject _root;
     private TextMeshProUGUI _titleText;
     private Image[] _slotImages = new Image[3];
     private Button _spinButton;
     private TextMeshProUGUI _resultText;
+    private AudioSource _slotAudioSource;
+    private Coroutine _slotSoundStopRoutine;
 
     private bool _isActive;
 
     void Start()
     {
+        EnsureAudioSource();
         BuildUI();
         panel.SetActive(false);
     }
@@ -193,6 +200,7 @@ public class SlotMachineDisplay : MonoBehaviour
         }
         
         GameManager.Instance?.SpendDollars(spinCost);
+        PlaySlotSoundSlice();
 
         int[] values = new int[3];
         for (int i = 0; i < 3; i++)
@@ -227,5 +235,46 @@ public class SlotMachineDisplay : MonoBehaviour
         {
             _slotImages[i].sprite = slotSprites != null && slotSprites.Length > 0 ? slotSprites[0] : null;
         }
+    }
+
+    private void EnsureAudioSource()
+    {
+        if (_slotAudioSource != null) return;
+
+        _slotAudioSource = GetComponent<AudioSource>();
+        if (_slotAudioSource == null)
+            _slotAudioSource = gameObject.AddComponent<AudioSource>();
+
+        _slotAudioSource.playOnAwake = false;
+        _slotAudioSource.loop = false;
+    }
+
+    private void PlaySlotSoundSlice()
+    {
+        if (slotSound == null) return;
+
+        EnsureAudioSource();
+        if (_slotSoundStopRoutine != null)
+            StopCoroutine(_slotSoundStopRoutine);
+
+        float startTime = Mathf.Clamp(slotStartTime, 0f, Mathf.Max(0f, slotSound.length - 0.01f));
+        float stopTime = Mathf.Clamp(slotStopTime, startTime, slotSound.length);
+        float duration = stopTime - startTime;
+        if (duration <= 0f) return;
+
+        _slotAudioSource.Stop();
+        _slotAudioSource.clip = slotSound;
+        _slotAudioSource.time = startTime;
+        _slotAudioSource.Play();
+        _slotSoundStopRoutine = StartCoroutine(StopSlotSoundAfter(duration));
+    }
+
+    private IEnumerator StopSlotSoundAfter(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+        if (_slotAudioSource != null)
+            _slotAudioSource.Stop();
+
+        _slotSoundStopRoutine = null;
     }
 }

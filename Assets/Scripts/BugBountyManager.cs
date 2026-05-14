@@ -5,6 +5,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 public class BugBountyManager : MonoBehaviour
 {
@@ -70,6 +73,10 @@ public class BugBountyManager : MonoBehaviour
     [SerializeField] private float minSpawnIntervalSeconds = 5f;
     [SerializeField] private float maxSpawnIntervalSeconds = 15f;
     [SerializeField] private int maxActiveBounties = 4;
+    [SerializeField] private AudioClip spawnAlertClip;
+    [SerializeField] private string spawnAlertResourceName = "bounty-alert";
+    [SerializeField] private string spawnAlertEditorAssetPath = "Assets/Audio/bounty-alert.mp3";
+    [SerializeField, Range(0f, 1f)] private float spawnAlertVolume = 0.05f;
 
     private readonly List<BugBountyDefinition> _catalog = new List<BugBountyDefinition>();
     private readonly List<ActiveBounty> _activeBounties = new List<ActiveBounty>();
@@ -109,6 +116,7 @@ public class BugBountyManager : MonoBehaviour
     private TextMeshProUGUI _spawnAlertText;
     private Image _spawnAlertBackground;
     private float _spawnAlertTimer;
+    private AudioSource _spawnAlertAudioSource;
 
     public IReadOnlyList<ActiveBounty> ActiveBounties => _activeBounties;
     public IReadOnlyList<BountyResult> SuccessfulBounties => _successfulBounties;
@@ -129,6 +137,8 @@ public class BugBountyManager : MonoBehaviour
             return;
         }
         Instance = this;
+        EnsureSpawnAlertAudioSource();
+        LoadSpawnAlertClipFromResources();
 
         BuildCatalog();
         _nextSpawnDelay = RollSpawnDelay();
@@ -212,8 +222,44 @@ public class BugBountyManager : MonoBehaviour
 
         string message = $"New bug bounty spawned: {SafeTitle(definition)} (${definition.Reward})";
         ShowSpawnAlert(message);
+        PlaySpawnAlertSound();
         OnBountySpawned?.Invoke(message);
         OnBountyDataChanged?.Invoke();
+    }
+
+    private void EnsureSpawnAlertAudioSource()
+    {
+        if (_spawnAlertAudioSource != null) return;
+
+        _spawnAlertAudioSource = GetComponent<AudioSource>();
+        if (_spawnAlertAudioSource == null)
+            _spawnAlertAudioSource = gameObject.AddComponent<AudioSource>();
+
+        _spawnAlertAudioSource.playOnAwake = false;
+        _spawnAlertAudioSource.loop = false;
+    }
+
+    private void LoadSpawnAlertClipFromResources()
+    {
+        if (spawnAlertClip != null || string.IsNullOrWhiteSpace(spawnAlertResourceName)) return;
+
+        spawnAlertClip = Resources.Load<AudioClip>(spawnAlertResourceName);
+#if UNITY_EDITOR
+        if (spawnAlertClip == null && !string.IsNullOrWhiteSpace(spawnAlertEditorAssetPath))
+            spawnAlertClip = AssetDatabase.LoadAssetAtPath<AudioClip>(spawnAlertEditorAssetPath);
+#endif
+        if (spawnAlertClip == null)
+            Debug.LogWarning($"[BugBountyManager] Could not load alert audio from Resources/{spawnAlertResourceName} or {spawnAlertEditorAssetPath}.");
+    }
+
+    private void PlaySpawnAlertSound()
+    {
+        if (spawnAlertClip == null)
+            LoadSpawnAlertClipFromResources();
+        if (spawnAlertClip == null) return;
+
+        EnsureSpawnAlertAudioSource();
+        _spawnAlertAudioSource.PlayOneShot(spawnAlertClip, spawnAlertVolume);
     }
 
     private BugBountyNote SpawnWallNote(ActiveBounty active, int anchorIndex)
